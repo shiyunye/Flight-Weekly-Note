@@ -1,5 +1,0 @@
-pandas_gbq
-pandas
-numpy
-bs4
-python-docx
