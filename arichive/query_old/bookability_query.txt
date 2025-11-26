@@ -1,0 +1,31 @@
+SELECT
+  DATE_SUB(DATE(booked_date_time_et - INTERVAL (EXTRACT(DAYOFWEEK FROM booked_date_time_et) - 1) DAY), INTERVAL 0 DAY) AS Week_Start,
+  DATE_ADD(DATE(booked_date_time_et - INTERVAL (EXTRACT(DAYOFWEEK FROM booked_date_time_et) - 1) DAY), INTERVAL 6 DAY) AS Week_Ending,
+  ROUND(
+    1 - COUNT(CASE 
+                WHEN status_code IN ('REJECTED') 
+                     OR reason_code IN ('PLATFORM_REJECT') 
+                THEN offer_id 
+              END) / COUNT(os.offer_id), 
+    3
+  ) AS acceptance_ratio,
+    ROUND(
+    COUNT(CASE 
+                WHEN status_code IN ('REJECTED') 
+                     OR reason_code IN ('PLATFORM_REJECT') 
+                THEN offer_id 
+              END) / COUNT(os.offer_id), 
+    3
+  ) AS bookability
+FROM
+  `pcln-pl-data-prod.air_xform.cdm_pcln_air_offer_detail` os
+WHERE
+  booked_date_time_et >= '2023-12-22'
+  AND status_code NOT IN ('TACCEPTED', 'TREJECTED', 'TMANUAL', 'MANUAL', 'SUBMITTED','TPENDING_TICKETING','TMANUAL')
+  AND os.PLF_CODE = 'PCLN' 
+  and (gds_booking_name is not null or gds_booking_name !='AIRGTT')
+  AND os.offer_type = 'FLY' 
+GROUP BY
+  Week_Start, Week_Ending
+ORDER BY
+  Week_Start desc;

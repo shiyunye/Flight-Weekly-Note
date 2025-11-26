@@ -1,0 +1,12 @@
+ select
+actual_date,  
+week_ending,
+channel,
+-- device,
+-- product, 
+sum(engaged_customers) engaged_DAU,
+sum(converted_customers) converted,
+sum(converted_customers)/sum(engaged_customers) conversion
+from pcln-pl-airanalytics-prod.flight_performance.GA_DAU
+group by 1,2,3--,4,5
+order by 1

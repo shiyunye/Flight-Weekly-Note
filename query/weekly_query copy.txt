@@ -1,0 +1,82 @@
+--Data Consolidated Table 
+
+SELECT wk_starting,
+wk_ending,
+us_travel_type,
+Company,
+brand,
+offer_type, 
+Carrier_Name as Carrier_Detail,
+case when Carrier_Name like '%(AA)%'then Carrier_Name
+when Carrier_Name like '%(DL)%' then Carrier_Name
+when Carrier_Name like '%(UA)%' then Carrier_Name
+when Carrier_Name like '%(NK)%' then Carrier_Name
+when Carrier_Name like '%(F9)%' then Carrier_Name
+when Carrier_Name like '%(AS)%' then Carrier_Name
+when Carrier_Name like '%(B6)%' then Carrier_Name else 'Other' end as Carrier,
+Offer_Method_Code,
+search_channel,
+search_channel_group,
+application_group as application,
+Fare_Type,
+fare_type_group,
+-- GDS_Booking_Name,
+gds_booking_name_group,
+gds_booking_category,
+merchant_of_record as MOR_Detail,
+case when merchant_of_record like 'AGENCY' then merchant_of_record
+when merchant_of_record like 'PCLN' then merchant_of_record
+when merchant_of_record like 'VCC' then merchant_of_record else '' end as merchant_of_record,
+orig_country_name,
+case when orig_country_name like 'United States'then 'US Origin' else 'Intl Origin' end as Orig_Country_Group,
+
+pos_iso_country_code,
+finance_filter,
+
+case when PLF_CODE = 'FFBKNG' then 'Project Mercury'
+  when PLF_CODE = 'BKNGWL' then 'Booking WL'
+  else '' end  as PLF_Group,
+
+sum(net_tickets_ly) AS Net_tkts_LY,
+sum(net_tickets_cy) AS Net_tkts_CY,
+sum(net_tickets_ly)-sum(net_tickets_cy) AS YoY_Tkts,
+sum(gr_tickets_ly) AS Gr_tkts_LY,
+sum(gr_tickets_cy) AS Gr_tkts_CY,
+sum(gr_tickets_ly)-sum(gr_tickets_cy) AS YoY_Gr_Tkts,
+
+sum(normalized_gr_tickets_ly) as normalized_gross_tickets_ly,
+sum(normalized_gr_tickets_cy) as normalized_gross_tickets_cy,
+sum(normalized_gr_tickets_ly)-sum(normalized_gr_tickets_cy) as YoY_normalized_gross_tickets,
+
+sum(normalized_net_tickets_ly) as normalized_net_tickets_ly,
+sum(normalized_net_tickets_cy) as normalized_net_tickets_cy,
+sum(normalized_net_tickets_ly)-sum(normalized_net_tickets_cy) as YoY_normalized_net_tickets,
+
+sum(gr_contr_ly) as gross_contribution_ly,
+sum(gr_contr_cy) as gross_contribution_cy,
+sum(gr_contr_ly)-sum(gr_contr_cy) as YoY_gross_contribution,
+
+sum(net_contr_ly) as net_contribution_ly,
+sum(net_contr_cy) as net_contribution_cy,
+sum(net_contr_ly)-sum(net_contr_cy) as YoY_net_contribution,
+
+sum(gr_fee_ly) as gr_contr_fee_ly,
+sum(gr_fee_cy) as gr_contr_fee_cy,
+sum(gr_fee_ly)-sum(gr_fee_cy) as YoY_gr_contr_fee,
+
+
+sum(net_fee_ly) as net_contr_fee_ly,
+sum(net_fee_cy) as net_contr_fee_cy,
+sum(net_fee_ly)-sum(net_fee_cy) as YoY_net_contr_fee
+
+
+FROM `pcln-pl-airanalytics-prod.flight_performance.pl_offer_view`
+where 
+trans_date is not null
+And wk_ending>=current_date()-15
+and
+wk_ending<current_date()-1
+--and gds_booking_name_group <> 'PHONE_SALES'
+--and  Company like 'Priceline%'
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+order by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23

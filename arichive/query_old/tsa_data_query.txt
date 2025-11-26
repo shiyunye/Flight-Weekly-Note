@@ -1,0 +1,74 @@
+with otl as (  
+SELECT
+    order_id,
+    slice_id,
+    date(MIN(depart_date_time)) AS depart_date,
+    COUNT(DISTINCT IFNULL(direction_type_code, CAST(1 AS STRING))) segment
+    
+  FROM
+    pcln-pl-data-prod.air_base.order_trip_leg_history_native_v otl
+    
+  LEFT JOIN pcln-pl-data-prod.air_base.airport_mapping_v ORIG ON otl.orig_airport = ORIG.AIRPORT_CODE
+  LEFT JOIN pcln-pl-data-prod.air_base.airport_mapping_v DEST ON otl.dest_airport = DEST.AIRPORT_CODE
+  
+  WHERE
+    orig.country_name = 'United States'
+    and dest.country_name = 'United States'
+    --and order_id = 13631927706
+    and date(depart_date_time) <current_date
+    and ifnull(leg_status_code,'all') NOT IN ('XX', 'HX')
+    and otl.creation_date_time >=current_date-720
+  GROUP BY
+    1,2
+      ORDER BY DEPART_DATE ASC
+),
+oi as (
+select offer_id as order_id,
+sum(net_tickets) as curr_num_tickets
+
+from pcln-pl-data-prod.xprod_mart.air_trans_day_offer_detail_v
+where 
+--offer_id = 16685505204
+net_tickets >0
+and air_split_ticket_desc is null
+and net_split_tickets = 0 
+and lead_offer_num is null
+group by 1
+
+union all 
+
+select offer_id as order_id,
+sum(net_tickets) as curr_num_tickets
+
+from pcln-pl-data-prod.xprod_mart.air_trans_day_offer_detail_v
+where 
+--offer_id = 16685505204
+net_split_tickets >0
+and air_split_ticket_desc is not null
+and lead_offer_num is not null
+group by 1
+
+)
+
+
+
+
+select
+depart_date,
+sum(flown_passengers) as passengers
+
+from (
+
+select
+oi.order_id,
+depart_date,
+(segment * oi.curr_num_tickets) as flown_passengers
+
+from otl
+join oi on oi.order_id = otl.order_id
+)
+
+where depart_date <current_date
+group by 1
+order by depart_date desc
+

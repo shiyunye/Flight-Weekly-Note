@@ -1,0 +1,2 @@
+select * from pcln-pl-airanalytics-prod.tsa.tsa_view
+where date  >= '2024-01-01'

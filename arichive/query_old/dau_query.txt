@@ -1,0 +1,26 @@
+select
+cal.wk_end_date as week_ending,
+cal.year year,
+cal.wk_num_in_year week_num,
+case when channel = 'affiliate' then 'Affiliate'
+when channel = 'direct' then 'Direct'
+when channel = 'metasearch' then 'Meta'
+when channel = 'shop ppc other' then 'Shop PPC'
+when channel = 'core sem' then 'SEM Core'
+when channel = 'brand sem' then 'SEM Brand'
+else 'Other' end as channel, 
+case when device = 'APP' then 'App' else 'Desk/MWEB' end as device,
+case when device = 'APP' then 'App'
+when device = 'DESKTOP' then 'Desktop'
+when device = 'MOBILEWEB' then 'MWeb'
+else 'Unknown' end as sub_device,
+
+sum(converted_dau) conversions,
+sum(dau_total) daily_active_users
+
+from `pcln-pl-airanalytics-prod.Revmgmt_Air_Performance.Search_Stream_DAU_Conversion` ss
+left join pcln-pl-data-prod.common_base.calendar_dim cal on ss.date = cal.actual_date
+where device<>'APP'
+and cal.actual_date>='2024-01-01'
+
+group by 1,2,3,4,5,6

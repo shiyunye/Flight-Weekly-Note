@@ -1,0 +1,124 @@
+with Finance_Temp as
+
+--Subquery that pulls data from the Finance table
+(SELECT
+--DATE_ADD(DATE_TRUNC(Trans_Date, WEEK(SUNDAY)), INTERVAL 0 DAY) AS wk_starting, --Paulo Add
+DATE_ADD(DATE_TRUNC(Trans_Date, WEEK(SUNDAY)), INTERVAL 6 DAY) AS wk_ending, --Paulo Add
+DATE_TRUNC(Date(trans_date), DAY) as Trans_Date,
+case when scenario = 'PRIOR FCST' then 'Guidance'
+when scenario = 'PLAN' then 'Z-Plan'
+Else scenario end as scenario,
+sum(gr_units) as Gross_Units,
+sum(gr_units+ref_units) as Net_Units,
+sum(gr_contr) as gross_cont_revenue,
+sum(gr_contr+ref_contr) as net_cont_revenue
+
+FROM `pcln-pl-spaanalytics-prod.spa_datamart.FPA_REPORTING_STAGE_V`
+WHERE product_detail LIKE ('%AIR%')
+and scenario IN ('ACTUALS','PRIOR FCST','PY ACTUALS','PLAN')
+and view_desc IN ('ACTIVITY')
+
+-- Data from beginning of the current year to the end of the last full week
+and Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), YEAR)
+and
+Trans_Date <=DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+
+group by 1,2,3
+order by 1,2,3
+)
+
+-- Pulls stats for the last two weeks ending on the last saturday
+select
+'2.Previous Week' as Period,
+Finance_Temp.Wk_ending as Period_End,
+--Finance_Temp.Trans_Date,
+Finance_Temp.scenario,
+sum(Gross_Units) as Gross_Units,
+sum(Net_Units) as Net_Units,
+sum(gross_cont_revenue) as gross_cont_revenue,
+sum(net_cont_revenue) as net_cont_revenue
+
+from Finance_Temp
+where Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(current_date(), WEEK(SUNDAY)), INTERVAL 8 DAY)
+
+group by 1,2,3--,4
+--order by 1,2,3,4
+
+UNION ALL
+
+select
+'1.Reporting Week' as Period,
+Finance_Temp.Wk_ending as Period_End,
+--Finance_Temp.Trans_Date,
+Finance_Temp.scenario,
+sum(Gross_Units) as Gross_Units,
+sum(Net_Units) as Net_Units,
+sum(gross_cont_revenue) as gross_cont_revenue,
+sum(net_cont_revenue) as net_cont_revenue
+
+from Finance_Temp
+where Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+
+group by 1,2,3--,4
+--order by 1,2,3,4
+
+
+UNION ALL
+
+-- Summarizes for the YTD
+--/*
+select
+'5.YTD' as Period,
+DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) as Period_End,
+--Finance_Temp.Trans_Date,
+Finance_Temp.scenario,
+sum(Gross_Units) as Gross_Units,
+sum(Net_Units) as Net_Units,
+sum(gross_cont_revenue) as gross_cont_revenue,
+sum(net_cont_revenue) as net_cont_revenue
+
+from Finance_Temp
+
+group by 1,2,3--,4
+
+--*/
+
+UNION ALL
+
+-- Summarizes for the MTD
+select
+'3.MTD' as Period,
+DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) as Period_End,
+--Finance_Temp.Trans_Date,
+Finance_Temp.scenario,
+sum(Gross_Units) as Gross_Units,
+sum(Net_Units) as Net_Units,
+sum(gross_cont_revenue) as gross_cont_revenue,
+sum(net_cont_revenue) as net_cont_revenue
+
+from Finance_Temp
+where Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), MONTH)
+and
+Trans_Date <=DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+
+group by 1,2,3--,4
+
+UNION ALL
+
+-- Summarizes for the QTD
+select
+'4.QTD' as Period,
+DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) as Period_End,
+--Finance_Temp.Trans_Date,
+Finance_Temp.scenario,
+sum(Gross_Units) as Gross_Units,
+sum(Net_Units) as Net_Units,
+sum(gross_cont_revenue) as gross_cont_revenue,
+sum(net_cont_revenue) as net_cont_revenue
+
+from Finance_Temp
+where Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), QUARTER)
+and
+Trans_Date <=DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+
+group by 1,2,3--,4

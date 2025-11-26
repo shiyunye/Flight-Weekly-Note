@@ -1,0 +1,11 @@
+select  
+week_ending,
+channel_group,
+channel,
+SUM(contribution) contribution,
+SUM(cost)cost,
+SAFE_DIVIDE(SUM(contribution), SUM(cost)) AS roi
+from pcln-pl-airanalytics-prod.flight_performance.ROI_Marketing_Channels_Partners
+where week_ending >= '2024-01-01'
+group by 1,2,3
+order by 1

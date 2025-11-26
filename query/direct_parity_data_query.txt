@@ -1,0 +1,65 @@
+SELECT 'one_week_ago' AS period, lw.perspective, CONCAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 WEEK), " to ", DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)) AS last_week, lw_parity, 
+CONCAT(DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 WEEK), " to ", DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 DAY)) AS same_week_last_year, 
+swly_parity, lw_parity - swly_parity AS parity_diff
+
+FROM
+
+(SELECT perspective, 'Last Week' AS period, (SUM(beat_total)+SUM(meet_total))/SUM(both_avail_total)  AS lw_parity
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 WEEK)
+  AND 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) 
+AND UPPER(perspective) = 'PRICELINE'
+AND UPPER(site) = 'EXPEDIA'
+AND orig_country = 'United States'
+AND category = 'Direct'
+GROUP BY 1, 2) lw
+
+JOIN (
+SELECT perspective, 'Same Week Last Year' AS period, (SUM(beat_total)+SUM(meet_total))/SUM(both_avail_total)  AS swly_parity
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 WEEK) 
+  AND 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 DAY)
+AND UPPER(perspective) = 'PRICELINE'
+AND UPPER(site) = 'EXPEDIA'
+AND orig_country = 'United States'
+AND category = 'Direct'
+GROUP BY 1, 2) swly
+ON lw.perspective = swly.perspective
+
+UNION ALL
+
+SELECT 'two_weeks_ago' AS period, lw.perspective, CONCAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 2 WEEK), " to ", DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 8 DAY)) AS two_weeks_ago, lw_parity, 
+CONCAT(DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 2 WEEK), " to ", DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 8 DAY)) AS two_weeks_ago_last_year, 
+swly_parity, lw_parity - swly_parity AS parity_diff
+
+FROM
+
+(SELECT perspective, 'Last Week' AS period, (SUM(beat_total)+SUM(meet_total))/SUM(both_avail_total)  AS lw_parity
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 2 WEEK)
+  AND 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 8 DAY) 
+AND UPPER(perspective) = 'PRICELINE'
+AND UPPER(site) = 'EXPEDIA'
+AND orig_country = 'United States'
+AND category = 'Direct'
+GROUP BY 1, 2) lw
+
+JOIN (
+SELECT perspective, 'Same Week Last Year' AS period, (SUM(beat_total)+SUM(meet_total))/SUM(both_avail_total)  AS swly_parity
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 2 WEEK) 
+  AND 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 8 DAY)
+AND UPPER(perspective) = 'PRICELINE'
+AND UPPER(site) = 'EXPEDIA'
+AND orig_country = 'United States'
+AND category = 'Direct'
+GROUP BY 1, 2) swly
+ON lw.perspective = swly.perspective

@@ -1,0 +1,20 @@
+select
+case when fare_type = 'Retail Published' then 'No Deal' else 'Deal'
+end as deal_vs_non_deal,
+deal.*
+ from (
+      select
+      format_datetime('%Y-%m',trans_date) yr_mnth,
+      DATE_ADD(DATE_TRUNC(trans_date, WEEK(SUNDAY)), INTERVAL 6 DAY) AS wk_ending,
+        ifnull(offer_type,'Air') offer_type,
+      CASE WHEN lead_offer_num IS NOT NULL THEN 'splitTkts'
+      else fare_type end fare_type,
+        sum(normalized_net_tickets) totalTkts,
+        from pcln-pl-data-prod.xprod_mart.air_trans_day_offer_detail_v apl
+      where trans_date >= '2023-01-01'
+          and plf_code not in ('FIRFLY','FFPCLN','FFAGDA','FFBKNG','AIRGTT')
+      group by
+      1, 2, 3,4
+      order by
+      1, 2, 3
+      ) deal

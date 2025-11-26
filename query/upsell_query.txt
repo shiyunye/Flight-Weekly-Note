@@ -1,0 +1,16 @@
+select
+DATE_ADD(DATE_TRUNC(ord.trans_date, WEEK(SUNDAY)), INTERVAL 6 DAY) AS week_ending,
+trans_date,
+Sum(CASE WHEN ord.fare_family_flag = 'U' THEN ord.gr_tickets ELSE 0 end ) upsell_tickets,
+Sum(CASE WHEN ord.fare_family_flag = 'S' THEN ord.gr_tickets ELSE 0 END) Selected_tickets,
+Sum(CASE WHEN ord.fare_family_flag = 'U' THEN ord.gr_tickets ELSE 0 end )/(Sum(CASE WHEN ord.fare_family_flag = 'U' THEN ord.gr_tickets ELSE 0 end )+Sum(CASE WHEN ord.fare_family_flag = 'S' THEN ord.gr_tickets ELSE 0 END)) upsell_rate
+from `pcln-pl-data-prod.xprod_mart.air_trans_day_offer_detail_v` ord
+INNER JOIN `pcln-pl-data-prod.cdp_base.offer_trip_leg_v` otl ON ord.offer_id = otl.offer_id
+WHERE 1=1
+and ord.offer_type is null
+and ord.offer_method_code = 'RTL'
+and DATE(ord.trans_date) >= date_sub(date_trunc(current_date(), MONTH), INTERVAL 14 MONTH) --"2023-09-01"
+and Date(ord.trans_date) < DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)
+--and gds_booking_name in ('AMADEUS','SABRE')
+group by 1,2
+order by 1 desc,2 desc

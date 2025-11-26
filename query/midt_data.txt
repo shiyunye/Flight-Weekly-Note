@@ -1,0 +1,14 @@
+select
+DATE_ADD(DATE_TRUNC(sales_date, WEEK(SUNDAY)), INTERVAL 6 DAY) AS wk_ending
+,LAST_DAY(sales_date, MONTH) as month_end
+,sales_date
+,carrier_code
+, agency
+--,persona
+,sum(passenger_bookings) as Tickets
+from pcln-pl-data-prod.air_xform.travelport_air_market_share
+where sales_date >= '2024-01-01'
+and POS = 'US'
+--and carrier_code in ('B6','DL','F9','WN')
+group by 1,2,3,4,5
+order by 1,2,3,4,5

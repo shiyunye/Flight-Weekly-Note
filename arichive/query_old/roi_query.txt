@@ -1,0 +1,185 @@
+with yr as (
+
+select 
+week_ending,
+week_ending - 364 as ly_week_eding,
+year,
+week_num,
+channel,
+device,
+sub_device,
+sum(cost) as cost,
+sum(contribution) as contribution
+
+ from (
+select
+cal.wk_end_date as week_ending,
+cal.year year,
+cal.wk_num_in_year week_num,
+case when camp_type='Air' then 'SEM Core'
+when camp_type='PCLN Brand' then 'SEM Brand'
+else 'Unknown' end as channel, 
+'Desk/MWEB' as device,
+case when device = 'Desktop' then 'Desktop'
+when device = 'Mobile' then 'MWeb'
+else 'Unknown' end as sub_device,
+
+case when camp_type='Air' then sum(cost)
+when camp_type='PCLN Brand' then sum(case when gr_orders=0 then 0 else cost*((air_rtl_orders + air_opq_orders)/gr_orders) end)
+else 0 end as cost,
+case when camp_type='Air' then sum(net_contr)
+when camp_type='PCLN Brand' then sum(case when gr_orders=0 then 0 else net_contr*((air_rtl_orders + air_opq_orders)/gr_orders) end)
+else 0 end as contribution
+
+
+from pcln-pl-data-prod.marketing_base.sem_agg_type sat
+left join pcln-pl-data-prod.common_base.calendar_dim cal on sat.caldate = cal.actual_date
+where camp_type IN ('Air', 'PCLN Brand')
+and cal.actual_date>='2023-01-01'
+
+group by 1,2,3,4,5,6, camp_type
+
+union all 
+
+select
+cal.wk_end_date as week_ending,
+cal.year year,
+cal.wk_num_in_year week_num,
+'Meta' as channel, 
+'Desk/MWEB' as device,
+case when device = 'Desktop' then 'Desktop'
+when device = 'Mobile' then 'MWeb'
+else 'Unknown' end as sub_device,
+
+sum(cost) cost,
+sum(total_net_value) contribution
+
+from
+(
+SELECT ACTIVITY_DATE, 
+(CASE WHEN referral_click_id LIKE 'CSR_AIRSEARCH_INT_API%' THEN 'Desktop'
+   WHEN referral_click_id LIKE 'CSR_AIRSEARCH_INT_M_API%' THEN 'Mobile'
+   END) AS DEVICE,
+0 AS COST,
+GR_ORDERS,
+TOTAL_NET_VALUE
+FROM pcln-pl-data-prod.marketing_xform.partner_contribution
+WHERE activity_date >= '2023-01-01'
+AND partner IN ('KAYAK','MOMONDO')  AND (referral_click_id like 'CSR_AIRSEARCH_INT_API%' 
+OR referral_click_id LIKE 'CSR_AIRSEARCH_INT_M_API%') 
+AND regexp_substr(referral_click_id, "AIRLINE:[^|]+",1,1) IS NOT NULL
+
+UNION ALL
+ 
+select click_date AS ACTIVITY_DATE, 
+(CASE WHEN DEVICE = 'Mobile' THEN 'Mobile'
+   WHEN DEVICE = 'Desktop' THEN 'Desktop'
+   WHEN DEVICE = 'Web' THEN 'Desktop'
+    END) AS DEVICE, 
+CLICK_REVENUE * 0.8 AS COST,
+0 AS GR_ORDERS,
+0 AS TOTAL_NET_VALUE
+from pcln-pl-data-prod.marketing_base.kayak_flight_clicks
+where click_date >= '2023-01-01'
+AND PROVIDER ='PRICELINEFLIGHTS'
+) kayak
+
+left join pcln-pl-data-prod.common_base.calendar_dim cal on kayak.activity_date = cal.actual_date
+where cal.actual_date>='2023-01-01'
+
+group by 1,2,3,4,5,6
+)
+group by 1,2,3,4,5,6,7
+), ly as (
+
+
+select
+cal.wk_end_date as week_ending,
+cal.year year,
+cal.wk_num_in_year week_num,
+case when camp_type='Air' then 'SEM Core'
+when camp_type='PCLN Brand' then 'SEM Brand'
+else 'Unknown' end as channel, 
+'Desk/MWEB' as device,
+case when device = 'Desktop' then 'Desktop'
+when device = 'Mobile' then 'MWeb'
+else 'Unknown' end as sub_device,
+
+case when camp_type='Air' then sum(cost)
+when camp_type='PCLN Brand' then sum(case when gr_orders=0 then 0 else cost*((air_rtl_orders + air_opq_orders)/gr_orders) end)
+else 0 end as cost,
+case when camp_type='Air' then sum(net_contr)
+when camp_type='PCLN Brand' then sum(case when gr_orders=0 then 0 else net_contr*((air_rtl_orders + air_opq_orders)/gr_orders) end)
+else 0 end as contribution
+
+
+from pcln-pl-data-prod.marketing_base.sem_agg_type sat
+left join pcln-pl-data-prod.common_base.calendar_dim cal on sat.caldate = cal.actual_date
+where camp_type IN ('Air', 'PCLN Brand')
+and cal.actual_date>='2023-01-01'
+
+group by 1,2,3,4,5,6, camp_type
+
+union all 
+
+select
+cal.wk_end_date as week_ending,
+cal.year year,
+cal.wk_num_in_year week_num,
+'Meta' as channel, 
+'Desk/MWEB' as device,
+case when device = 'Desktop' then 'Desktop'
+when device = 'Mobile' then 'MWeb'
+else 'Unknown' end as sub_device,
+
+sum(cost) cost,
+sum(total_net_value) contribution
+
+from
+(
+SELECT ACTIVITY_DATE, 
+(CASE WHEN referral_click_id LIKE 'CSR_AIRSEARCH_INT_API%' THEN 'Desktop'
+   WHEN referral_click_id LIKE 'CSR_AIRSEARCH_INT_M_API%' THEN 'Mobile'
+   END) AS DEVICE,
+0 AS COST,
+GR_ORDERS,
+TOTAL_NET_VALUE
+FROM pcln-pl-data-prod.marketing_xform.partner_contribution
+WHERE activity_date >= '2023-01-01'
+AND partner IN ('KAYAK','MOMONDO')  AND (referral_click_id like 'CSR_AIRSEARCH_INT_API%' 
+OR referral_click_id LIKE 'CSR_AIRSEARCH_INT_M_API%') 
+AND regexp_substr(referral_click_id, "AIRLINE:[^|]+",1,1) IS NOT NULL
+
+UNION ALL
+ 
+select click_date AS ACTIVITY_DATE, 
+(CASE WHEN DEVICE = 'Mobile' THEN 'Mobile'
+   WHEN DEVICE = 'Desktop' THEN 'Desktop'
+   WHEN DEVICE = 'Web' THEN 'Desktop'
+    END) AS DEVICE, 
+CLICK_REVENUE AS COST,
+0 AS GR_ORDERS,
+0 AS TOTAL_NET_VALUE
+from pcln-pl-data-prod.marketing_base.kayak_flight_clicks
+where click_date >= '2023-01-01'
+AND PROVIDER ='PRICELINEFLIGHTS'
+) kayak
+
+left join pcln-pl-data-prod.common_base.calendar_dim cal on kayak.activity_date = cal.actual_date
+where cal.actual_date>='2023-01-01'
+
+group by 1,2,3,4,5,6
+  
+)
+
+select yr.*, ly.cost as ly_cost, ly.contribution as ly_contribution from yr
+join ly on yr.ly_week_eding = ly.week_ending 
+  and yr.channel = ly.channel 
+  and yr.DEVICE = ly.DEVICE 
+  and yr.sub_device = ly.sub_device
+  --and yr.year = ly.year
+  --and yr.week_num = ly.week_num
+
+where 
+yr.week_ending >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 WEEK), WEEK)
+  AND yr.week_ending < DATE_TRUNC(CURRENT_DATE(), WEEK)

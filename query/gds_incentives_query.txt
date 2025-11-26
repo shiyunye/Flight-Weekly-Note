@@ -1,0 +1,46 @@
+WITH base AS (
+  SELECT 
+    LAST_DAY(actual_date) AS month,
+    cal.wk_end_date AS week_ending,
+    SUM(net_gds_incentives) AS net_gds_incentives,
+    cal.actual_date
+  FROM `pcln-pl-spaanalytics-prod.spa_datamart.GDS_INCENTIVE_OFFER_NEW_2024` gds
+  LEFT JOIN `pcln-pl-data-prod.common_base.calendar_dim` cal 
+    ON gds.activity_date = cal.actual_date
+  WHERE cal.actual_date between '2024-01-01' and DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+    AND eb_channel_partner_desc NOT LIKE '%RCC%'
+    AND eb_channel_partner_desc NOT LIKE '%BKNG%'
+    AND eb_channel_partner_desc NOT LIKE '%AGDA%'
+    AND eb_channel_partner_desc NOT LIKE '%BNKG%'
+    AND eb_channel_partner_desc NOT LIKE '%ROCKET%'
+    AND eb_channel_partner_desc <> 'GETAROOM'
+    AND product_id = 1
+  GROUP BY 1,2,4
+)
+, cutoff AS (
+  -- Define today's cutoff and same day last year
+  SELECT 
+    CURRENT_DATE() AS today,
+    DATE_TRUNC(CURRENT_DATE(), YEAR) AS start_of_this_year,
+    DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), YEAR) AS start_of_last_year,
+    DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR) AS same_day_last_year
+)
+SELECT 
+  CASE 
+    WHEN EXTRACT(YEAR FROM b.actual_date) = EXTRACT(YEAR FROM c.today) THEN 'Current Year'
+    WHEN EXTRACT(YEAR FROM b.actual_date) = EXTRACT(YEAR FROM c.today) - 1 THEN 'Prior Year'
+  END AS Week_Ending,
+  SUM(b.net_gds_incentives) AS net_gds_incentives
+FROM base b
+CROSS JOIN cutoff c
+WHERE (
+    -- Current year YTD
+    (EXTRACT(YEAR FROM b.actual_date) = EXTRACT(YEAR FROM c.today)
+     AND b.actual_date BETWEEN c.start_of_this_year AND c.today)
+  OR
+    -- Prior year YTD through same cutoff date
+    (EXTRACT(YEAR FROM b.actual_date) = EXTRACT(YEAR FROM c.today) - 1
+     AND b.actual_date BETWEEN c.start_of_last_year AND c.same_day_last_year)
+)
+GROUP BY Week_Ending
+ORDER BY Week_Ending;

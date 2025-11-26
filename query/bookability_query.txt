@@ -1,0 +1,99 @@
+WITH base AS (
+  SELECT
+    DATE(os.booked_date_time_et) AS offer_date,
+    CASE WHEN os.PLF_CODE IN ('PCLN') THEN 'B2C' ELSE 'B2B' END AS type,
+    CASE
+      WHEN os.status_code = 'REJECTED' THEN 'REJECTED'
+      WHEN os.reason_code = 'PLATFORM_REJECT' THEN 'REJECTED'
+      ELSE 'ACCEPTED'
+    END AS offer_status,
+    os.reason_code,
+    os.error_message,
+    CASE
+      WHEN os.reason_code LIKE 'CC_%' THEN 'CREDIT CARD ERROR'
+      WHEN os.error_code LIKE '%CC_FRAUD_FAILED%' THEN 'CC FRAUD FAILED'
+      ELSE os.reason_code
+    END AS group_reason_code,
+    COALESCE(os.error_code, os.error_message) AS error_code,
+    CASE
+      WHEN os.error_code LIKE 'CC_%' THEN 'CREDIT CARD ERROR'
+      WHEN os.error_code LIKE '%SUPPLY%' THEN 'SUPPLY ERROR'
+      WHEN os.error_code LIKE '%APPLICATION%' THEN 'APPLICATION ERROR'
+      WHEN os.error_code LIKE '%IO_ERROR%' THEN 'IO_ERROR ERROR'
+      ELSE os.error_code
+    END AS group_error_code,
+    os.validating_carrier_code AS carrier,
+    CASE
+      WHEN os.primary_booking_pseudo_city IN ('DIDAP01') THEN 'DIDA'
+      WHEN os.primary_booking_pseudo_city IN ('MFLYP00','MFLYP01') THEN 'MYSTIFLY'
+      WHEN os.primary_booking_pseudo_city IN ('NYCPZ28AT') THEN 'AMADEUS-NDCX'
+      WHEN os.primary_booking_pseudo_city IN ('GTT') THEN 'PHONE_SALES'
+      ELSE os.GDS_BOOKING_NAME
+    END AS gds_booking_name,
+    os.GDS_SEARCH_NAME,
+    os.orig_airport_code AS orig_city_id,
+    os.dest_airport_code AS dest_city_id,
+    om_ff.country_name AS orig,
+    dm_ff.country_name AS dest,
+    CASE WHEN COALESCE(om_ff.country_name, otl.dest_country_entered) IN ('United States','US') THEN 'Y' ELSE 'N' END AS dest_us_only,
+    CASE WHEN COALESCE(dm_ff.country_name, otl.orig_country_entered) IN ('United States','US') THEN 'Y' ELSE 'N' END AS orig_us_only,
+    om_ff.continent_name AS dest_cont,
+    dm_ff.continent_name AS orig_cont,
+    os.Firefly_flag,
+    CASE WHEN os.split_ticket_flag THEN 'Split' ELSE 'non-Split' END AS split_ticket,
+    ao.stay_length,
+    os.itinerary_type_code,
+    CASE
+      WHEN device LIKE '%iPhone%' OR device LIKE '%IPHONE%' THEN 'iPhone'
+      WHEN device LIKE '%iPad%' THEN 'iPad'
+      WHEN device LIKE '%Androi%' THEN 'ANDROID'
+      WHEN device LIKE '%Windows%' OR device LIKE '%compatibl%' THEN 'Windows'
+      WHEN device LIKE '%Macintos%' THEN 'iMac'
+      WHEN device = 'PCLNApp|SMARTPHONE' THEN 'mobileWeb'
+      WHEN device LIKE '%Mozilla%' THEN 'Mozilla'
+      ELSE device
+    END AS device_model,
+    CASE
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) <= 2 THEN '0-2'
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) BETWEEN 3  AND 6  THEN '3-6'
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) BETWEEN 7  AND 13 THEN '7-13'
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) BETWEEN 14 AND 20 THEN '14-20'
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) BETWEEN 21 AND 30 THEN '21-30'
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) BETWEEN 31 AND 60 THEN '31-60'
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) BETWEEN 61 AND 90 THEN '61-90'
+      WHEN DATE_DIFF(DATE(os.depart_date_time_ltz), DATE(os.booked_date_time_et), DAY) >= 91 THEN '90+'
+    END AS ap_window,
+    os.offer_method_code,
+    os.offer_type,
+    os.plf_code
+  FROM `pcln-pl-data-prod.air_xform.cdm_pcln_air_offer_detail` os
+  JOIN `pcln-pl-data-prod.air_xform.air_offer_view` ao
+    ON CAST(os.offer_id AS INT64) = ao.offer_id
+  LEFT JOIN `pcln-pl-data-prod.air_base.airport_mapping` om_ff
+    ON os.orig_airport_code = om_ff.airport_code
+  LEFT JOIN `pcln-pl-data-prod.air_base.airport_mapping` dm_ff
+    ON os.dest_airport_code = dm_ff.airport_code
+  JOIN `pcln-pl-data-prod.cdp_base.offer_trip_leg_history_external` otl
+    ON otl.offer_id = CAST(os.offer_id AS NUMERIC)
+  WHERE DATE(os.booked_date_time_et) >DATE_SUB(CURRENT_DATE(), INTERVAL 24 MONTH)
+    AND otl.creation_date IS NOT NULL
+    AND os.status_code NOT IN ('TACCEPTED','TREJECTED','TMANUAL','MANUAL','SUBMITTED')
+    AND os.plf_code NOT IN ('FIRFLY','FFBKNG','FFAGDA')
+), agg AS (
+  SELECT
+     DATE_TRUNC(offer_date, WEEK(SUNDAY)) AS wk_start,
+     DATE_ADD(DATE_TRUNC(offer_date,WEEK(SUNDAY)), INTERVAL 6 DAY) AS week_ending,
+    SAFE_DIVIDE(
+      SUM(CASE WHEN offer_status = 'REJECTED' THEN 1 ELSE 0 END),
+      COUNT(*)
+    ) AS rejection_rate,
+    1-    SAFE_DIVIDE(
+      SUM(CASE WHEN offer_status = 'REJECTED' THEN 1 ELSE 0 END),
+      COUNT(*)
+    ) AS success_rate
+  FROM base
+  where offer_type =  'FLY'
+  GROUP BY 1,2--,3,4,5,6,7
+)
+SELECT *
+FROM agg

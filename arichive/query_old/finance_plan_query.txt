@@ -1,0 +1,100 @@
+
+-- Weekly Note -Finance Query v2
+
+-- Step 1: Truncate the table
+BEGIN TRANSACTION;
+TRUNCATE TABLE `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast`;
+
+-- Step 2: Insert updated data
+INSERT INTO `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast` (
+  SELECT
+    DATE_ADD(DATE_TRUNC(Trans_Date, WEEK(SUNDAY)), INTERVAL 6 DAY) AS wk_ending,
+    DATE_TRUNC(DATE(Trans_Date), DAY) AS Trans_Date,
+    CASE 
+      WHEN scenario = 'PRIOR FCST' THEN 'Guidance'
+      WHEN scenario = 'PLAN' THEN 'Z-Plan'
+      ELSE scenario 
+    END AS scenario,
+    SUM(gr_units) AS Gross_Units,
+    SUM(gr_units + ref_units) AS Net_Units,
+    SUM(gr_contr) AS gross_cont_revenue,
+    SUM(gr_contr + ref_contr) AS net_cont_revenue
+  FROM `pcln-pl-spaanalytics-prod.spa_datamart.FPA_REPORTING_STAGE_V`
+  WHERE product_detail LIKE ('%AIR%')
+    AND scenario IN ('ACTUALS', 'PRIOR FCST', 'PY ACTUALS', 'PLAN')
+    AND view_desc IN ('ACTIVITY')
+    AND Trans_Date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), YEAR), INTERVAL 1 YEAR)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+  GROUP BY 1, 2, 3
+Order by 1,2,3
+);
+
+-- Step 3: Pull the required stats for reporting
+COMMIT;
+
+-- Automatically show results
+SELECT * FROM (
+  SELECT  
+    '2.Previous Week' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    SUM(gross_cont_revenue) AS gross_cont_revenue,
+    SUM(net_cont_revenue) AS net_cont_revenue
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 8 DAY)
+  GROUP BY 1, 2, 3
+  UNION ALL
+  SELECT  
+    '1.Reporting Week' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    SUM(gross_cont_revenue) AS gross_cont_revenue,
+    SUM(net_cont_revenue) AS net_cont_revenue
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+  GROUP BY 1, 2, 3
+  UNION ALL
+  SELECT  
+    '5.YTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    SUM(gross_cont_revenue) AS gross_cont_revenue,
+    SUM(net_cont_revenue) AS net_cont_revenue
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast` Finance_Temp
+    WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), year)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+  GROUP BY 1, 2, 3
+  UNION ALL
+  SELECT  
+    '3.MTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    SUM(gross_cont_revenue) AS gross_cont_revenue,
+    SUM(net_cont_revenue) AS net_cont_revenue
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast` Finance_Temp
+  WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), MONTH)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+  GROUP BY 1, 2, 3
+  UNION ALL
+  SELECT  
+    '4.QTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    SUM(gross_cont_revenue) AS gross_cont_revenue,
+    SUM(net_cont_revenue) AS net_cont_revenue
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast` Finance_Temp
+  WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), QUARTER)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+  GROUP BY 1, 2, 3
+  Order by 1,2,3	
+);

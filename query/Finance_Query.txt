@@ -1,0 +1,303 @@
+
+-- Weekly Note -Finance Query v2
+/*
+
+DROP TABLE `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2`
+
+create table `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` (
+    wk_ending DATETIME,
+    trans_date DATETIME,
+    scenario STRING,
+    product_detail STRING,
+    Gross_Units FLOAT64,
+    Net_Units FLOAT64,
+    Gross_Cont_Revenue_fee FLOAT64,
+    Net_Cont_Revenue_Fee FLOAT64,
+);
+*/
+
+
+-- Step 1: Truncate the table
+
+BEGIN TRANSACTION;
+TRUNCATE TABLE `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2`;
+
+-- Step 2: Insert updated data
+INSERT INTO `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` (
+  SELECT
+    DATE_ADD(DATE_TRUNC(Trans_Date, WEEK(SUNDAY)), INTERVAL 6 DAY) AS wk_ending,
+    DATE_TRUNC(DATE(Trans_Date), DAY) AS Trans_Date,
+    CASE 
+      WHEN scenario = 'PRIOR FCST' THEN 'Guidance'
+      WHEN scenario = 'PLAN' THEN 'Z-Plan'
+      ELSE scenario 
+    END AS scenario,
+    product_detail,
+    SUM(gr_units) AS Gross_Units,
+    SUM(gr_units + ref_units) AS Net_Units,
+    --SUM(gr_contr) AS gross_cont_revenue,
+    --SUM(gr_contr + ref_contr) AS net_cont_revenue,
+    
+    --For Gross Contribution with Fee ONLY (NO GDS Incentives) uncomment next two lines and comment out the following two lines
+    --SUM(gr_contr + gr_fee) AS gross_cont_revenue_fee,
+    --SUM(gr_contr + ref_contr + gr_fee + ref_fee) AS net_cont_revenue_fee,
+    SUM(gr_contr + gr_fee+ gds_incentives) AS gross_cont_revenue_fee,
+    SUM(gr_contr + ref_contr + gr_fee + ref_fee + gds_incentives) AS net_cont_revenue_fee
+  
+  FROM `pcln-pl-spaanalytics-prod.spa_datamart.FPA_REPORTING_STAGE_V`
+  WHERE product_detail LIKE ('%AIR%')
+    AND scenario IN ('ACTUALS', 'PRIOR FCST', 'PY ACTUALS', 'PLAN')
+    AND view_desc IN ('ACTIVITY')
+    AND Trans_Date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), YEAR), INTERVAL 1 YEAR)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+  GROUP BY 1, 2, 3,4
+);
+
+--select * from `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2`
+-- Step 3: Pull the required stats for reporting
+COMMIT;
+
+-- Automatically show results
+SELECT Period
+,Period_End
+,Scenario
+,sum(Gross_Units) as Gross_Units
+,sum(Net_Units) as Net_Units
+,sum(gross_cont_revenue_fee) as gross_cont_revenue_fee
+,sum(net_cont_revenue_fee) as net_cont_revenue_fee
+FROM (
+ --Previous Week's Units
+  SELECT  
+    '2.Previous Week' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    0 AS gross_cont_revenue_fee,
+    0 AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 8 DAY)
+  and scenario in ('ACTUALS','Z-Plan')
+  GROUP BY 1, 2, 3
+  UNION ALL
+  
+  -- Contribution + Fee For Previous week
+  SELECT  
+    '2.Previous Week' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    0 AS Gross_Units,
+    0 AS Net_Units,
+    SUM(gross_cont_revenue_fee) AS gross_cont_revenue_fee,
+    SUM(net_cont_revenue_fee) AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 8 DAY)
+  and scenario in ('ACTUALS','Z-Plan')
+  and product_detail = 'AIR CORE'
+  GROUP BY 1, 2, 3
+
+  UNION ALL
+
+--Units for Reporting Week
+  SELECT  --CORRECT
+    '1.Reporting Week' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    0 AS gross_cont_revenue_fee,
+    0 AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+   and scenario in ('ACTUALS','Z-Plan')
+  GROUP BY 1, 2, 3
+  UNION ALL
+  
+  -- Contribution + Fee for Reporting Week
+    SELECT  -- CORRECT
+    '1.Reporting Week' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    0 AS Gross_Units,
+    0 AS Net_Units,
+    SUM(gross_cont_revenue_fee) AS gross_cont_revenue_fee,
+    SUM(net_cont_revenue_fee) AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+   and scenario in ('ACTUALS','Z-Plan')
+    and product_detail = 'AIR CORE'
+  GROUP BY 1, 2, 3
+  
+  UNION ALL
+
+-- YTD Units
+  SELECT  --CORRECT
+    '5.YTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    0 AS gross_cont_revenue_fee,
+    0 AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+    WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), year)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+    and scenario in ('ACTUALS','Z-Plan')
+  GROUP BY 1, 2, 3
+  UNION ALL
+
+ --YTD Contribution w/Fee 
+    SELECT  -- CORRECT
+    '5.YTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    0 AS Gross_Units,
+    0 AS Net_Units,
+    SUM(gross_cont_revenue_fee) AS gross_cont_revenue_fee,
+    SUM(net_cont_revenue_fee) AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+    WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), year)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+    and scenario in ('ACTUALS','Z-Plan')
+    and product_detail = 'AIR CORE'
+  GROUP BY 1, 2, 3
+  UNION ALL
+  
+  --MTD Units
+
+  SELECT  --CORRECT
+    '3.MTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    0 AS gross_cont_revenue_fee,
+    0 AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), MONTH)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+    and scenario in ('ACTUALS','Z-Plan')
+  GROUP BY 1, 2, 3
+  UNION ALL
+  
+  --MTD Contrbution w/Fee
+    SELECT  --CORRECT
+    '3.MTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    0 AS Gross_Units,
+    0 AS Net_Units,
+    SUM(gross_cont_revenue_fee) AS gross_cont_revenue_fee,
+    SUM(net_cont_revenue_fee) AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), MONTH)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+    and scenario in ('ACTUALS','Z-Plan')
+    and product_detail = 'AIR CORE'
+  GROUP BY 1, 2, 3
+  UNION ALL
+
+--QTD Units
+  SELECT  -- Correct
+    '4.QTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    0 AS gross_cont_revenue_fee,
+    0 AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), QUARTER)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+    and scenario in ('ACTUALS','Z-Plan')
+  GROUP BY 1, 2, 3
+
+   UNION ALL
+
+--QTD Contribution + Fee 
+  SELECT  --Correct
+    '4.QTD' AS Period,
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) AS Period_End,
+    Finance_Temp.scenario,
+    0 AS Gross_Units,
+    0 AS Net_Units,
+    SUM(gross_cont_revenue_fee) AS gross_cont_revenue_fee,
+    SUM(net_cont_revenue_fee) AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Trans_Date >= DATE_TRUNC(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY), QUARTER)
+    AND Trans_Date <= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+    and scenario in ('ACTUALS','Z-Plan')
+    and product_detail = 'AIR CORE'
+  GROUP BY 1, 2, 3
+
+   UNION ALL
+    
+--Pulling only Actuals for prior year, Plan is messed up because of new years plan put in
+--Units For Previous week LY
+    SELECT  
+    '7.Previous Week LY' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    0 AS gross_cont_revenue_fee,
+    0 AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_ADD(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)) - INTERVAL 2 WEEK, INTERVAL 6 DAY)
+  and scenario in ('ACTUALS')
+  GROUP BY 1, 2, 3
+  UNION ALL
+  
+  -- Contribution + Fee For Previous week LY
+  SELECT  
+    '7.Previous Week LY' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    0 AS Gross_Units,
+    0 AS Net_Units,
+    SUM(gross_cont_revenue_fee) AS gross_cont_revenue_fee,
+    SUM(net_cont_revenue_fee) AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending = DATE_ADD(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)) - INTERVAL 2 WEEK, INTERVAL 6 DAY)
+  and scenario in ('ACTUALS')
+  and product_detail = 'AIR CORE'
+  GROUP BY 1, 2, 3
+
+  UNION ALL
+
+--Units for Reporting Week LY
+  SELECT  --CORRECT
+    '6.Reporting Week LY' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    SUM(Gross_Units) AS Gross_Units,
+    SUM(Net_Units) AS Net_Units,
+    0 AS gross_cont_revenue_fee,
+    0 AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending =  DATE_ADD(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)) - INTERVAL 1 WEEK, INTERVAL 6 DAY)
+   and scenario in ('ACTUALS')
+  GROUP BY 1, 2, 3
+  UNION ALL
+  
+  -- Contribution + Fee for Reporting Week LY
+    SELECT  -- CORRECT
+    '6.Reporting Week LY' AS Period,
+    Finance_Temp.Wk_ending AS Period_End,
+    Finance_Temp.scenario,
+    0 AS Gross_Units,
+    0 AS Net_Units,
+    SUM(gross_cont_revenue_fee) AS gross_cont_revenue_fee,
+    SUM(net_cont_revenue_fee) AS net_cont_revenue_fee
+  FROM `pcln-pl-airanalytics-prod.flight_performance.TB_Finance_Guidance_Forecast2` Finance_Temp
+  WHERE Finance_Temp.Wk_ending =  DATE_ADD(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)) - INTERVAL 1 WEEK, INTERVAL 6 DAY)
+   and scenario in ('ACTUALS')
+    and product_detail = 'AIR CORE'
+  GROUP BY 1, 2, 3
+
+
+)
+group by 1,2,3
+order by 1,2,3
+
+;

@@ -1,0 +1,66 @@
+--META
+SELECT 'one_week_ago' AS period, lw.site, lw.meta, 
+CONCAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 WEEK), " to ", DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)) AS last_week, 
+lw_placement, 
+CONCAT(DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 WEEK), " to ", DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 DAY)) AS same_week_last_year, 
+swly_placement, lw_placement - swly_placement AS placement_diff
+
+FROM
+
+(SELECT site, meta, 'Last Week' AS period, (SUM(top_4))/SUM(total_shops) AS lw_placement
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_meta_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 WEEK)
+  AND 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY) 
+AND UPPER(site) IN ('PRICELINE', 'EXPEDIA')
+AND orig_country = 'United States'
+GROUP BY 1, 2, 3) lw
+
+JOIN (
+SELECT site, meta, 'Same Week Last Year' AS period, (SUM(top_4))/SUM(total_shops) AS swly_placement 
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_meta_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 WEEK) 
+  AND 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 1 DAY)
+AND UPPER(site) IN ('PRICELINE', 'EXPEDIA')
+AND orig_country = 'United States'
+GROUP BY 1, 2, 3
+) swly
+ON lw.site = swly.site AND lw.meta = swly.meta 
+
+UNION ALL
+
+SELECT 'two_weeks_ago' AS period, lw.site, lw.meta, 
+CONCAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 2 WEEK), " to ", DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 8 DAY)) AS two_weeks_ago, 
+lw_placement, 
+CONCAT(DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 2 WEEK), " to ", DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 8 DAY)) AS two_weeks_ago_last_year, 
+swly_placement, lw_placement - swly_placement AS placement_diff
+
+FROM
+
+(SELECT site, meta, 'Last Week' AS period, (SUM(top_4))/SUM(total_shops) AS lw_placement
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_meta_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 2 WEEK)
+  AND 
+  DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 8 DAY) 
+AND UPPER(site) IN ('PRICELINE', 'EXPEDIA')
+AND orig_country = 'United States'
+GROUP BY 1, 2, 3) lw
+
+JOIN (
+SELECT site, meta, 'Same Week Last Year' AS period, (SUM(top_4))/SUM(total_shops) AS swly_placement 
+FROM `pcln-pl-airanalytics-prod.flight_parity.flight_aggregate_meta_ow` 
+WHERE shopping_date BETWEEN 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 2 WEEK) 
+  AND 
+  DATE_SUB(DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), WEEK(SUNDAY)), INTERVAL 8 DAY)
+AND UPPER(site) IN ('PRICELINE', 'EXPEDIA')
+AND orig_country = 'United States'
+GROUP BY 1, 2, 3
+) swly
+ON lw.site = swly.site AND lw.meta = swly.meta 
+
+ORDER BY 1, 2 DESC, 3

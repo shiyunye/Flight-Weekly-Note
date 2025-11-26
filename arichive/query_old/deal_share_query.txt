@@ -1,0 +1,46 @@
+
+select
+format_datetime('%Y-%m',o.website_exit_date_time) yr_mnth,
+DATE_ADD(DATE_TRUNC(o.website_exit_date_time, WEEK(SUNDAY)), INTERVAL 6 DAY) AS wk_ending,
+  ifnull(o.offer_type,'Air') offer_type,
+  case when offer_type is null and offer_method_code='RTL' and case when substr(ifnull(COALESCE(f.account_code, oit.account_code),'x'),1,2)='VP' then 'VP' else 'X' end ='VP' then 'PKG Net (Sold as RTL CUG)'
+         when offer_type is null and offer_method_code='SOPQ' and case when substr(ifnull(COALESCE(f.account_code,oit.account_code),'x'),1,2)='VP' then 'VP' else 'X' end='VP' then 'PKG Net (Sold as Opaque)'
+         when offer_type is null and offer_method_Code='RTL' and ord.merchant_of_record='LWFR' then 'RTL Net'
+         when offer_type='PKG' and case when substr(ifnull(COALESCE(f.account_code,oit.account_code),'x'),1,2)='VP' then 'VP' else 'X' end='VP' then 'PKG Net'
+         when offer_type='PKG' and offer_method_code = 'RTL' and ord.merchant_of_record='LWFR' then 'PKG Net'
+         when offer_type='PKG' and (offer_method_code is null OR offer_method_code='SOPQ') then 'SOPQ on PKG path'
+         when offer_type='PKG' and offer_method_code = 'RTL' then 'Retail on PKG path'
+         when offer_type is null and offer_method_code='SOPQ' then 'SOPQ'
+         else 'Retail' end Whatisit,
+CASE WHEN o.offer_method_code = 'SOPQ' THEN 'sopqTkts'
+  	   WHEN o.offer_method_code = 'RTL' AND ord.merchant_of_record NOT IN ('OTHER','AGENCY','GTT')
+  	   AND ifnull(oi.margin_usd,0) <> 0 AND ord.gds_booking_name NOT IN ('TRAVELFUSION','MYSTIFLY') THEN 'NetTkt'
+  	   WHEN o.lead_offer_num IS NOT NULL THEN 'splitTkts' END AS logic2Category,
+  sum(oi.trip * o.num_tickets) totalTkts,
+  sum(oi.trip * case when o.offer_method_code='SOPQ' then 1 else 0 end * o.num_tickets) sopqTkts,
+  sum(oi.trip * case when o.offer_method_code='RTL' then 1 else 0 end
+              * case when ord.merchant_of_record='OTHER' then 0
+                     when ord.merchant_of_record= 'AGENCY' then 0
+                     when ord.merchant_of_record='GTT' then 0
+                     else 1 end
+              * case when ifnull(oi.margin_usd,0)=0 then 0 else 1 end
+              * case when ord.gds_booking_name = 'TRAVELFUSION' then 0
+                     when ord.gds_booking_name ='MYSTIFLY' then 0 
+                     else 1 end 
+              * o.num_tickets) netTkts,
+  sum(oi.trip * case when o.lead_offer_num is null then 0 else 1 end * o.num_tickets) splitTkts
+  from `pcln-pl-data-prod.cdp_base.orders_v` ord
+        join `pcln-pl-data-prod.air_xform.air_offer_view` o on o.offer_id = ord.order_id
+        join `pcln-pl-data-prod.air_xform.order_info` oi on oi.order_id = ord.order_id
+        left join `pcln-pl-data-prod.air_base.air_fare_agreement_view` f on f.fare_agreement_id = ord.fare_agreement_id
+        left join `pcln-pl-data-prod.air_base.air_fare_agreement_view` afa on ord.fare_agreement_id = afa.fare_agreement_id 	
+        left join `pcln-pl-data-prod.air_base.carrier` cxr on ifnull(afa.carrier_code,ord.validating_carrier_code) = cxr.carrier_code 
+        LEFT JOIN `pcln-pl-data-prod.cdp_base.offer_itinerary_v` oit ON oit.offer_id = o.offer_id
+where o.website_exit_date_time >= '2023-01-01'
+     and o.plf_code not in ('FIRFLY','FFPCLN','FFAGDA','FFBKNG','AIRGTT')
+	 and trip >0
+group by
+  1,
+  2, 3, 4,5
+  order by   1,
+  2, 3, 4,5
