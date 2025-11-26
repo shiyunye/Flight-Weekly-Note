@@ -188,14 +188,15 @@ def format_percentage_values_other(table):
                             run.text = f"{num:.1f}%"  # Format with one decimal place
                         else:
                             num = float(value)  # Convert to float
-                            run.font.bold = True
 
                             if num >= 0 and num == int(num):
                                 run.text = f"+{num:.0f}"  # Add plus sign
                                 font_color = RGBColor(106, 168, 79)  # Dark green
+                                run.font.bold = True
                             elif num < 0 and num <1:
                                 run.text = f"{num:.0f}"  # Keep negative sign
                                 font_color = RGBColor(255, 0, 0)  # Red
+                                run.font.bold = True
                             else: 
                                 run.text = f"{num:.2f}"  # Keep negative sign
                     except ValueError:
@@ -207,7 +208,6 @@ def format_percentage_values_other(table):
                     run.font.name = "Montserrat"
 
 from docx.shared import RGBColor
-
 def format_percentage_values(
     table,
     header_row_idx=1,
@@ -647,6 +647,7 @@ def create_others_table(word_document,df_others):
     # Merge header cells and add logos
     table.cell(0, 0).merge(table.cell(1, 2))
     header_cell_1 = table.cell(0, 3).merge(table.cell(0, 5))
+
     # print(header_logo_path_1)
     logo_paragraph_1 = header_cell_1.paragraphs[0]
     logo_paragraph_1.add_run().add_picture(header_logo_path_1, width=Inches(1.5), height=Inches(0.52))
@@ -778,9 +779,6 @@ def create_others_table(word_document,df_others):
     set_font(total_paragraph, font_name="Montserrat", font_size=Pt(10), bold=False)
     center_text_in_cell(total_cell)
 
-
-
-
     # table.cell(16, 2).merge(table.cell(16, 1)).merge(table.cell(16, 0))
     # table.cell(17, 2).merge(table.cell(17, 1)).merge(table.cell(17, 0))
 
@@ -798,11 +796,10 @@ def create_others_table(word_document,df_others):
         row.height_rule = WD_ROW_HEIGHT.EXACTLY
 
     for cell in table.columns[0].cells: cell.width = Inches(1.0)
-    for cell in table.columns[1].cells: cell.width = Inches(0.7)
+    for cell in table.columns[1].cells: cell.width = Inches(0.8)
     for col_idx in range(2, len(table.columns)):
         for cell in table.columns[col_idx].cells:
-            cell.width = Inches(0.8)
-
+            cell.width = Inches(1)
     format_percentage_values_other(table)
     center_text_in_cell(cell)
 
