@@ -190,12 +190,14 @@ def format_percentage_values_other(table):
                             num = float(value)  # Convert to float
                             run.font.bold = True
 
-                            if num >= 0:
+                            if num >= 0 and num == int(num):
                                 run.text = f"+{num:.0f}"  # Add plus sign
                                 font_color = RGBColor(106, 168, 79)  # Dark green
-                            else: 
+                            elif num < 0 and num <1:
                                 run.text = f"{num:.0f}"  # Keep negative sign
                                 font_color = RGBColor(255, 0, 0)  # Red
+                            else: 
+                                run.text = f"{num:.2f}"  # Keep negative sign
                     except ValueError:
                         # Leave non-numerical text unchanged
                         pass

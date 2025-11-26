@@ -11,7 +11,7 @@ def read_sql_query(file_path):
 # File paths to SQL query files
 sql_files = {
     "weekly_note": '../query/weekly_query.txt',
-    "finance_data": '../query/Finance_Query.txt',
+    "finance_data": '../query/finance_query.txt',
     "deal_share": '../query/deal_share_query.txt',
     "gds_incentives": '../query/gds_incentives_query.txt',
     "tsa_data": '../query/tsa_data_query.txt',
