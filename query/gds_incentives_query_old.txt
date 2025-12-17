@@ -2,13 +2,12 @@ WITH base AS (
   SELECT 
     LAST_DAY(actual_date) AS month,
     cal.wk_end_date AS week_ending,
-    SUM(gds_revenue + carrier_revenue + sabre_bonus_gds_revenue) AS net_gds_incentives,
+    SUM(net_gds_incentives) AS net_gds_incentives,
     cal.actual_date
-  FROM `pcln-pl-spaanalytics-prod.spa_datamart.FPA_Air_GDS_Incentives` gds
+  FROM `pcln-pl-spaanalytics-prod.spa_datamart.GDS_INCENTIVE_OFFER_NEW_2024` gds
   LEFT JOIN `pcln-pl-data-prod.common_base.calendar_dim` cal 
     ON gds.activity_date = cal.actual_date
-  WHERE cal.actual_date BETWEEN '2024-01-01'
-    AND DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
+  WHERE cal.actual_date between '2024-01-01' and DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(SUNDAY)), INTERVAL 1 DAY)
     AND eb_channel_partner_desc NOT LIKE '%RCC%'
     AND eb_channel_partner_desc NOT LIKE '%BKNG%'
     AND eb_channel_partner_desc NOT LIKE '%AGDA%'
@@ -17,8 +16,8 @@ WITH base AS (
     AND eb_channel_partner_desc <> 'GETAROOM'
     AND product_id = 1
   GROUP BY 1,2,4
-),
-cutoff AS (
+)
+, cutoff AS (
   -- Define today's cutoff and same day last year
   SELECT 
     CURRENT_DATE() AS today,

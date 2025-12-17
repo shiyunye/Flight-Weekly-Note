@@ -28,24 +28,24 @@ def calculate_metrics(data,end_date, pp_end_date, group_col, filters=None, suffi
     grouped_previous = data[data['wk_ending'] == pp_end_date].groupby(group_col)
 
     df = pd.DataFrame()
-    df['net_con_fee'] = grouped_current['net_contr_fee_cy'].sum().astype(int)
+    df['Net Cont w/ Fee'] = grouped_current['net_contr_fee_cy'].sum().astype(int)
     df['net_con_fee_cwly'] = grouped_current['net_contr_fee_ly'].sum().astype(int)
     df['net_con_fee_pw'] = grouped_previous['net_contr_fee_cy'].sum().astype(int)
     df['net_con_fee_pwly'] = grouped_previous['net_contr_fee_ly'].sum().astype(int)
 
     # Add totals
-    df.loc['Total', 'net_con_fee':'net_con_fee_pwly'] = [
-        df['net_con_fee'].sum(), df['net_con_fee_cwly'].sum(),
+    df.loc['Total', 'Net Cont w/ Fee':'net_con_fee_pwly'] = [
+        df['Net Cont w/ Fee'].sum(), df['net_con_fee_cwly'].sum(),
         df['net_con_fee_pw'].sum(), df['net_con_fee_pwly'].sum()
     ]
 
     # Calculate YoY and YoY PW
-    df['YoY'] = ((df['net_con_fee'] / df['net_con_fee_pwly'] - 1) * 100).round(1).astype(str) + '%'
+    df['YoY'] = ((df['Net Cont w/ Fee'] / df['net_con_fee_pwly'] - 1) * 100).round(1).astype(str) + '%'
     df['YoY PW'] = ((df['net_con_fee_pw'] / df['net_con_fee_pwly'] - 1) * 100).round(1).astype(str) + '%'
 
     # Select and format columns
-    df = df[['net_con_fee', 'YoY', 'YoY PW']]
-    df['net_con_fee'] = df['net_con_fee'].apply(format_number)
+    df = df[['Net Cont w/ Fee', 'YoY', 'YoY PW']]
+    df['Net Cont w/ Fee'] = df['Net Cont w/ Fee'].apply(format_number)
 
     return df.add_suffix(suffix)
 

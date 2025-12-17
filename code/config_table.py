@@ -207,12 +207,10 @@ def format_percentage_values_other(table):
                     run.font.color.rgb = font_color
                     run.font.name = "Montserrat"
 
-from docx.shared import RGBColor
 def format_percentage_values(
     table,
     header_row_idx=1,
-    keywords=("Actual", "Net Tickets", "DAU", "Conversion", "ROI")
-):
+    keywords=("Actual", "Net Tickets", "DAU", "Conversion", "ROI")):
     # --- basic guards ---
     if table is None or not getattr(table, "rows", None):
         return
@@ -272,17 +270,16 @@ def format_percentage_values(
                     if is_key_col:
                         font_color = RGBColor(0, 0, 0)
                     else:
-                        if num_value > 0:
+                        if num_value >= 0:
                             font_color = RGBColor(106, 168, 79)  # green
-                        elif num_value < 0:
-                            font_color = RGBColor(255, 0, 0)    # red
                         else:
-                            font_color = RGBColor(0, 0, 0)      # zero stays black
+                            font_color = RGBColor(255, 0, 0)    # red
+                        # else:
+                        #     font_color = RGBColor(0, 0, 0)      # zero stays black
 
                     run.text = formatted_value
                     run.font.color.rgb = font_color
                     run.font.bold = (not is_key_col)
-
 
 def add_table_headers_index(table, title, column_titles, logos):
     
@@ -474,11 +471,11 @@ def create_word_table(df, title, logos, word_document):
     populate_table_data(table, df)
 
     if title == "Source":
-        for cell_coords in [
-            (4, 1), (4, 2), (4, 3),
-        ]:
-            remove_cell_borders(table.cell(*cell_coords))
-    
+        table.cell(4, 1).merge(table.cell(4, 3))
+        
+    if title == "Carrier":
+        table.cell(6, 4).merge(table.cell(7, 6))
+
     if title == "ROI":
         for i in range(2, 10):  # i goes from 2 to 9
             for j in range(1, 4):  # j goes from 1 to 3
@@ -515,11 +512,8 @@ def create_summary_table(word_document,df_summary):
     
     set_table_style(table, border_color="000000", border_width=8, fill_color="FFFFFF")
     
-    # # for cell_coords in [
-    # #     (0, 0), (5, 5),(5, 6), (5, 7), (5, 8), (5, 9),(6, 5),(6, 6), (6, 7), (6, 8), (6, 9),(7, 5),(7, 6), (7, 7), (7, 8), (7, 9),(8, 5),(8, 6), (8, 7), (8, 8), (8, 9),
-    # #     (9, 5),(9, 6), (9, 7), (9, 8), (9, 9)
-    # # ]:
-    # #     remove_cell_borders(table.cell(*cell_coords))
+    # Merge cells from (5, 6) to (9, 8)
+    table.cell(5, 6).merge(table.cell(9, 8))
 
     # Add the logo to the first cell and merge header cells
     header_cell = table.cell(0, 0)
