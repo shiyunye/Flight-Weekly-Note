@@ -6,6 +6,6 @@ SUM(contribution) contribution,
 SUM(cost)cost,
 SAFE_DIVIDE(SUM(contribution), SUM(cost)) AS roi
 from pcln-pl-airanalytics-prod.flight_performance.ROI_Marketing_Channels_Partners
-where week_ending >= '2024-01-01'
+where week_ending >=DATE_SUB(CURRENT_DATE(), INTERVAL 25 MONTH)
 group by 1,2,3
 order by 1

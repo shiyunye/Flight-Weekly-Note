@@ -1,9 +1,7 @@
 --Data Consolidated Table 
 
 SELECT 
-trans_date,
-wk_starting,
-wk_ending,
+format_date('%Y-%m-%d', DATE_TRUNC(trans_date, MONTH)) trans_date,
 us_travel_type,
 Company,
 brand,
@@ -97,15 +95,8 @@ sum(net_wex_fee_ly) as net_wex_fee_ly
 
 FROM `pcln-pl-airanalytics-prod.flight_performance.pl_offer_view` 
 WHERE
-  (
-    trans_date BETWEEN DATE_TRUNC(CURRENT_DATE(), YEAR) AND CURRENT_DATE()
-  )
-  OR
-  (
-    trans_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE(), YEAR), INTERVAL 1 YEAR)
-          AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
-  )
+trans_date>='2024-12-01'
 --and gds_booking_name_group <> 'PHONE_SALES'
 --and  Company like 'Priceline%'
-group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
 order by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24

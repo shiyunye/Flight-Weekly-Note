@@ -16,9 +16,6 @@ def format_percentage(num):
         return ''
     return f"{num:.1f}%"
 
-def round_to_nearest_10(num):
-  return round(num / 10) * 10
-
 def calculate_metrics(data,end_date, pp_end_date, group_col, filters=None, suffix=""):
     if filters:
         for col, val in filters.items():
@@ -40,8 +37,8 @@ def calculate_metrics(data,end_date, pp_end_date, group_col, filters=None, suffi
     ]
 
     # Calculate YoY and YoY PW
-    df['YoY'] = ((df['Net Cont w/ Fee'] / df['net_con_fee_pwly'] - 1) * 100).round(1).astype(str) + '%'
-    df['YoY PW'] = ((df['net_con_fee_pw'] / df['net_con_fee_pwly'] - 1) * 100).round(1).astype(str) + '%'
+    df['YoY'] = ((df['Net Cont w/ Fee'] / df['net_con_fee_cwly'] - 1) * 100).apply(format_percentage)
+    df['YoY PW'] = ((df['net_con_fee_pw'] / df['net_con_fee_pwly'] - 1) * 100).apply(format_percentage)
 
     # Select and format columns
     df = df[['Net Cont w/ Fee', 'YoY', 'YoY PW']]

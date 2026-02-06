@@ -11,14 +11,6 @@ def format_number(num):
         return "<1K"
     return f"{num:.0f}"
 
-def format_percentage(num):
-    if pd.isna(num):
-        return ''
-    return f"{num:.1f}%"
-
-def round_to_nearest_10(num):
-  return round(num / 10) * 10
-
 def calculate_metrics(data,end_date, pp_end_date, group_col, filters=None, suffix=""):
     if filters:
         for col, val in filters.items():

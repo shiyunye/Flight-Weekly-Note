@@ -3,7 +3,7 @@ import pandas as pd
 def create_parity_table(
         format_percentage,
         df_direct_parity,
-        round_to_nearest_10,
+        # round_to_nearest_10,
         df_meta_parity):
 
      # Helper function to safely extract values with a default value
@@ -22,17 +22,17 @@ def create_parity_table(
             'lw_parity'
         ) * 100
     )
-    df_parity.loc['Direct vs Expedia','YoY (bps)_pcln']=round_to_nearest_10(
+    df_parity.loc['Direct vs Expedia','YoY_pcln']=format_percentage(
         safe_extract_value(
             df_direct_parity,
             (df_direct_parity['period'] == 'one_week_ago') & (df_direct_parity['perspective'] == 'PRICELINE') ,
-            'parity_diff')*10000
+            'parity_pert')*100
             )
-    df_parity.loc['Direct vs Expedia','YoY PW (bps)_pcln']=round_to_nearest_10(
+    df_parity.loc['Direct vs Expedia','YoY PW_pcln']=format_percentage(
         safe_extract_value(
             df_direct_parity,
             (df_direct_parity['period'] == 'two_weeks_ago') & (df_direct_parity['perspective'] == 'PRICELINE') ,
-            'parity_diff')*10000
+            'parity_pert')*100
     )
 
     # Kayak Placement
@@ -43,19 +43,19 @@ def create_parity_table(
             'lw_placement'
         ) * 100
     )
-    df_parity.loc['Kayak Placement', 'YoY (bps)_pcln'] = round_to_nearest_10(
+    df_parity.loc['Kayak Placement', 'YoY_pcln'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'one_week_ago') & (df_meta_parity['site'] == 'PRICELINE') & (df_meta_parity['meta'] == 'Kayak'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
-    df_parity.loc['Kayak Placement', 'YoY PW (bps)_pcln'] = round_to_nearest_10(
+    df_parity.loc['Kayak Placement', 'YoY PW_pcln'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'two_weeks_ago') & (df_meta_parity['site'] == 'PRICELINE') & (df_meta_parity['meta'] == 'Kayak'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
 
         # Kayak Placement expedia
@@ -66,19 +66,19 @@ def create_parity_table(
             'lw_placement'
         ) * 100
     )
-    df_parity.loc['Kayak Placement', 'YoY (bps)_exp'] = round_to_nearest_10(
+    df_parity.loc['Kayak Placement', 'YoY_exp'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'one_week_ago') & (df_meta_parity['site'] == 'EXPEDIA') & (df_meta_parity['meta'] == 'Kayak'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
-    df_parity.loc['Kayak Placement', 'YoY PW (bps)_exp'] = round_to_nearest_10(
+    df_parity.loc['Kayak Placement', 'YoY PW_exp'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'two_weeks_ago') & (df_meta_parity['site'] == 'EXPEDIA') & (df_meta_parity['meta'] == 'Kayak'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
 
 
@@ -90,19 +90,19 @@ def create_parity_table(
             'lw_placement'
         ) * 100
     )
-    df_parity.loc['Skyscanner Placement', 'YoY (bps)_pcln'] = round_to_nearest_10(
+    df_parity.loc['Skyscanner Placement', 'YoY_pcln'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'one_week_ago') & (df_meta_parity['site'] == 'PRICELINE') &(df_meta_parity['meta'] == 'Skyscanner'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
-    df_parity.loc['Skyscanner Placement', 'YoY PW (bps)_pcln'] = round_to_nearest_10(
+    df_parity.loc['Skyscanner Placement', 'YoY PW_pcln'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'two_weeks_ago') &(df_meta_parity['site'] == 'PRICELINE') & (df_meta_parity['meta'] == 'Skyscanner'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
 
     # Skyscanner Placement Expedia
@@ -113,19 +113,19 @@ def create_parity_table(
             'lw_placement'
         ) * 100
     )
-    df_parity.loc['Skyscanner Placement', 'YoY (bps)_exp'] = round_to_nearest_10(
+    df_parity.loc['Skyscanner Placement', 'YoY_exp'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'one_week_ago') & (df_meta_parity['site'] == 'EXPEDIA') & (df_meta_parity['meta'] == 'Skyscanner'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
-    df_parity.loc['Skyscanner Placement', 'YoY PW (bps)_exp'] = round_to_nearest_10(
+    df_parity.loc['Skyscanner Placement', 'YoY PW_exp'] = format_percentage(
         safe_extract_value(
             df_meta_parity,
             (df_meta_parity['period'] == 'two_weeks_ago') & (df_meta_parity['site'] == 'EXPEDIA') & (df_meta_parity['meta'] == 'Skyscanner'),
-            'placement_diff'
-        ) * 10000
+            'placement_pert'
+        ) * 100
     )
    
     return df_parity

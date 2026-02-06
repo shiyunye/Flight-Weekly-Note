@@ -1,5 +1,5 @@
 select
-case when fare_type = 'Retail Published' then 'No Deal' else 'Deal'
+case when fare_type in ('Retail Published','Web Fare') then 'No Deal' else 'Deal'
 end as deal_vs_non_deal,
 deal.*
  from (
@@ -11,7 +11,7 @@ deal.*
       else fare_type end fare_type,
         sum(normalized_net_tickets) totalTkts,
         from pcln-pl-data-prod.xprod_mart.air_trans_day_offer_detail_v apl
-      where trans_date >= '2023-01-01'
+      where trans_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 24 MONTH)
           and plf_code not in ('FIRFLY','FFPCLN','FFAGDA','FFBKNG','AIRGTT')
       group by
       1, 2, 3,4
