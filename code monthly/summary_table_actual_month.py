@@ -218,23 +218,4 @@ def create_finance_number_month(
     )
 
     out = pd.DataFrame(rows)
-
-    # # ---- formatting ----
-    # num_cols = ["CW", "PW", "CY", "LY"]
-    # pct_cols = ["Reporting Week", "Previous Week", "YTD"]
-
-    # for c in num_cols:
-    #     out[c] = pd.to_numeric(out[c], errors="coerce")
-
-    # for c in pct_cols:
-    #     out[c] = pd.to_numeric(out[c], errors="coerce")
-
-    # if callable(format_number):
-    #     for c in num_cols:
-    #         out[c] = out[c].apply(format_number)
-
-    # if callable(format_percentage):
-    #     for c in pct_cols:
-    #         out[c] = out[c].apply(format_percentage)
-
     return out
