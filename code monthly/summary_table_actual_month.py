@@ -3,10 +3,10 @@ import pandas as pd
 def create_finance_number_month(
     df_monthly,
     df_gds_incentive,
-    start_date, end_date,                 
-    pp_start_date, pp_end_date,           
-    cwly_start_date, cwly_end_date,       
-    pwly_start_date, pwly_end_date,       
+    start_date, end_date,
+    pp_start_date, pp_end_date,
+    cwly_start_date, cwly_end_date,
+    pwly_start_date, pwly_end_date,
     begin_of_current_year,
     begin_of_last_year,
     ytd_last_year,
@@ -17,7 +17,7 @@ def create_finance_number_month(
     g = df_gds_incentive.copy()
 
     # --- normalize date types ---
-    for d, cols in [(w, [ "trans_date"]), (g, ["trans_date"])]:
+    for d, cols in [(w, ["trans_date"]), (g, ["trans_date"])]:
         for c in cols:
             if c in d.columns:
                 d[c] = pd.to_datetime(d[c], errors="coerce")
@@ -66,31 +66,31 @@ def create_finance_number_month(
 
     # ---- columns ----
     ALL = [
-        "net_tkts_cy","net_tkts_ly","gr_tkts_cy","gr_tkts_ly",
-        "net_contribution_cy","net_contribution_ly","gross_contribution_cy","gross_contribution_ly",
-        "normalized_net_tickets_cy","normalized_net_tickets_ly","normalized_gross_tickets_cy","normalized_gross_tickets_ly",
-        "net_contr_fee_cy","net_contr_fee_ly","gr_contr_fee_cy","gr_contr_fee_ly",
-        "net_wex_fee_cy","gr_wex_fee_cy","net_wex_fee_ly","gr_wex_fee_ly",
+        "net_tkts_cy","gr_tkts_cy",
+        "net_contribution_cy","gross_contribution_cy",
+        "normalized_net_tickets_cy","normalized_gross_tickets_cy",
+        "net_contr_fee_cy","gr_contr_fee_cy",
+        "net_wex_fee_cy","gr_wex_fee_cy"
     ]
     FLT = [
-        "net_tkts_cy","net_tkts_ly",
-        "net_contr_fee_cy","net_contr_fee_ly","gr_contr_fee_cy","gr_contr_fee_ly",
-        "net_wex_fee_cy","gr_wex_fee_cy","net_wex_fee_ly","gr_wex_fee_ly",
+        "net_tkts_cy",
+        "net_contr_fee_cy","gr_contr_fee_cy",
+        "net_wex_fee_cy","gr_wex_fee_cy",
     ]
 
     # ---- totals (month ranges) ----
-    cw_all     = sum_period(m_all, ALL, start=start_date, end=end_date)
-    pw_all     = sum_period(m_all, ALL, start=pp_start_date, end=pp_end_date)
-    cwly_all   = sum_period(m_all, ALL, start=cwly_start_date, end=cwly_end_date)
-    pwly_all   = sum_period(m_all, ALL, start=pwly_start_date, end=pwly_end_date)
+    cw_all   = sum_period(m_all, ALL, start=start_date, end=end_date)
+    pw_all   = sum_period(m_all, ALL, start=pp_start_date, end=pp_end_date)
+    cwly_all = sum_period(m_all, ALL, start=cwly_start_date, end=cwly_end_date)
+    pwly_all = sum_period(m_all, ALL, start=pwly_start_date, end=pwly_end_date)
 
     ytd_cy_all = sum_period(m_all, ALL, start=begin_of_current_year, end=end_date)
     ytd_ly_all = sum_period(m_all, ALL, start=begin_of_last_year, end=ytd_last_year)
 
-    cw_flt     = sum_period(m_flt, FLT, start=start_date, end=end_date)
-    pw_flt     = sum_period(m_flt, FLT, start=pp_start_date, end=pp_end_date)
-    cwly_flt   = sum_period(m_flt, FLT, start=cwly_start_date, end=cwly_end_date)
-    pwly_flt   = sum_period(m_flt, FLT, start=pwly_start_date, end=pwly_end_date)
+    cw_flt   = sum_period(m_flt, FLT, start=start_date, end=end_date)
+    pw_flt   = sum_period(m_flt, FLT, start=pp_start_date, end=pp_end_date)
+    cwly_flt = sum_period(m_flt, FLT, start=cwly_start_date, end=cwly_end_date)
+    pwly_flt = sum_period(m_flt, FLT, start=pwly_start_date, end=pwly_end_date)
 
     ytd_cy_flt = sum_period(m_flt, FLT, start=begin_of_current_year, end=end_date)
     ytd_ly_flt = sum_period(m_flt, FLT, start=begin_of_last_year, end=ytd_last_year)
@@ -105,18 +105,19 @@ def create_finance_number_month(
 
     rows = []
 
-    def add(label, cw, pw, rw, prevw, cy, ly):
-            rows.append({
-                "Measure": label,
-                "CW": cw,
-                "PW": pw,
-                "Reporting Week": rw,
-                "Previous Week": prevw,
-                "CY": cy,
-                "LY": ly,
-                "YTD": pct(cy, ly),
-            })
-
+    def add(label, cw, pw, cwly, pwly, rw, prevw, cy, ly):
+        rows.append({
+            "Measure": label,
+            "CW": cw,
+            "PW": pw,
+            "CWly": cwly,
+            "pWly": pwly,
+            "Reporting Week": rw,
+            "Previous Week": prevw,
+            "CY": cy,
+            "LY": ly,
+            "YTD": pct(cy, ly),
+        })
 
     # ---- simple measures ----
     simple = [
@@ -135,10 +136,12 @@ def create_finance_number_month(
             label,
             cw_all[cy_col],
             pw_all[cy_col],
+            cwly_all[cy_col],
+            pwly_all[cy_col],
             pct(cw_all[cy_col], cwly_all[cy_col]),
             pct(pw_all[cy_col], pwly_all[cy_col]),
             ytd_cy_all[cy_col],
-            ytd_ly_all[cy_col],   
+            ytd_ly_all[cy_col],
         )
 
     # ---- GDS Incentive (YoY) ----
@@ -146,6 +149,8 @@ def create_finance_number_month(
         "GDS Incentive",
         inc_cw,
         inc_pw,
+        inc_cwly,
+        inc_pwly,
         pct(inc_cw, inc_cwly),
         pct(inc_pw, inc_pwly),
         inc_cy,
@@ -157,10 +162,12 @@ def create_finance_number_month(
         "VCC Rebate (net_wex_fee)",
         cw_all["net_wex_fee_cy"],
         pw_all["net_wex_fee_cy"],
-        pct(cw_all["net_wex_fee_cy"], cwly_all["net_wex_fee_ly"]),
-        pct(pw_all["net_wex_fee_cy"], pwly_all["net_wex_fee_ly"]),
+        cwly_all["net_wex_fee_cy"],
+        pwly_all["net_wex_fee_cy"],
+        pct(cw_all["net_wex_fee_cy"], cwly_all["net_wex_fee_cy"]),
+        pct(pw_all["net_wex_fee_cy"], pwly_all["net_wex_fee_cy"]),
         ytd_cy_all["net_wex_fee_cy"],
-        ytd_ly_all["net_wex_fee_ly"],
+        ytd_ly_all["net_wex_fee_cy"],
     )
 
     # ---- flight-only measures ----
@@ -168,8 +175,10 @@ def create_finance_number_month(
         "Net Cont + Fee (Flight Only)",
         cw_flt["net_contr_fee_cy"],
         pw_flt["net_contr_fee_cy"],
-        pct(cw_flt["net_contr_fee_cy"], cwly_flt["net_contr_fee_ly"]),
-        pct(pw_flt["net_contr_fee_cy"], pwly_flt["net_contr_fee_ly"]),
+        cwly_flt["net_contr_fee_cy"],
+        pwly_flt["net_contr_fee_cy"],
+        pct(cw_flt["net_contr_fee_cy"], cwly_flt["net_contr_fee_cy"]),
+        pct(pw_flt["net_contr_fee_cy"], pwly_flt["net_contr_fee_cy"]),
         ytd_cy_flt["net_contr_fee_cy"],
         ytd_ly_flt["net_contr_fee_cy"],
     )
@@ -178,10 +187,12 @@ def create_finance_number_month(
         "Gross Cont + Fee (Flight Only)",
         cw_flt["gr_contr_fee_cy"],
         pw_flt["gr_contr_fee_cy"],
-        pct(cw_flt["gr_contr_fee_cy"], cwly_flt["gr_contr_fee_ly"]),
-        pct(pw_flt["gr_contr_fee_cy"], pwly_flt["gr_contr_fee_ly"]),
+        cwly_flt["gr_contr_fee_cy"],
+        pwly_flt["gr_contr_fee_cy"],
+        pct(cw_flt["gr_contr_fee_cy"], cwly_flt["gr_contr_fee_cy"]),
+        pct(pw_flt["gr_contr_fee_cy"], pwly_flt["gr_contr_fee_cy"]),
         ytd_cy_flt["gr_contr_fee_cy"],
-        ytd_ly_flt["gr_contr_fee_ly"],
+        ytd_ly_flt["gr_contr_fee_cy"],
     )
 
     # ---- flight-only (+ incentives + vcc rebate) ----
@@ -189,33 +200,41 @@ def create_finance_number_month(
         "Net Cont + Fee + Incentives + vcc rebate(Flight Only)",
         cw_flt["net_contr_fee_cy"] + inc_cw + cw_flt["net_wex_fee_cy"],
         pw_flt["net_contr_fee_cy"] + inc_pw + pw_flt["net_wex_fee_cy"],
+        cwly_flt["net_contr_fee_cy"] + inc_cwly + cwly_flt["net_wex_fee_cy"],
+        pwly_flt["net_contr_fee_cy"] + inc_pwly + pwly_flt["net_wex_fee_cy"],
         pct(
             cw_flt["net_contr_fee_cy"] + inc_cw + cw_flt["net_wex_fee_cy"],
-            cwly_flt["net_contr_fee_ly"] + inc_cwly + cwly_flt["net_wex_fee_ly"],
+            cwly_flt["net_contr_fee_cy"] + inc_cwly + cwly_flt["net_wex_fee_cy"],
         ),
         pct(
             pw_flt["net_contr_fee_cy"] + inc_pw + pw_flt["net_wex_fee_cy"],
-            pwly_flt["net_contr_fee_ly"] + inc_pwly + pwly_flt["net_wex_fee_ly"],
+            pwly_flt["net_contr_fee_cy"] + inc_pwly + pwly_flt["net_wex_fee_cy"],
         ),
         ytd_cy_flt["net_contr_fee_cy"] + inc_cy + ytd_cy_flt["net_wex_fee_cy"],
-        ytd_ly_flt["net_contr_fee_ly"] + inc_ly + ytd_ly_flt["net_wex_fee_ly"],  # FIX
+        ytd_ly_flt["net_contr_fee_cy"] + inc_ly + ytd_ly_flt["net_wex_fee_cy"],
     )
 
     add(
         "Gross Cont + Fee + Incentives + vcc rebate(Flight Only)",
         cw_flt["gr_contr_fee_cy"] + inc_cw + cw_flt["gr_wex_fee_cy"],
         pw_flt["gr_contr_fee_cy"] + inc_pw + pw_flt["gr_wex_fee_cy"],
+        cwly_flt["gr_contr_fee_cy"] + inc_cwly + cwly_flt["gr_wex_fee_cy"],
+        pwly_flt["gr_contr_fee_cy"] + inc_pwly + pwly_flt["gr_wex_fee_cy"],
         pct(
             cw_flt["gr_contr_fee_cy"] + inc_cw + cw_flt["gr_wex_fee_cy"],
-            cwly_flt["gr_contr_fee_ly"] + inc_cwly + cwly_flt["gr_wex_fee_ly"],
+            cwly_flt["gr_contr_fee_cy"] + inc_cwly + cwly_flt["gr_wex_fee_cy"],
         ),
         pct(
             pw_flt["gr_contr_fee_cy"] + inc_pw + pw_flt["gr_wex_fee_cy"],
-            pwly_flt["gr_contr_fee_ly"] + inc_pwly + pwly_flt["gr_wex_fee_ly"],
+            pwly_flt["gr_contr_fee_cy"] + inc_pwly + pwly_flt["gr_wex_fee_cy"],
         ),
         ytd_cy_flt["gr_contr_fee_cy"] + inc_cy + ytd_cy_flt["gr_wex_fee_cy"],
-        ytd_ly_flt["gr_contr_fee_ly"] + inc_ly + ytd_ly_flt["gr_wex_fee_ly"],   # FIX
+        ytd_ly_flt["gr_contr_fee_cy"] + inc_ly + ytd_ly_flt["gr_wex_fee_cy"],
     )
 
     out = pd.DataFrame(rows)
+
+    for c in ["CW", "PW", "CWly", "pWly", "CY", "LY"]:
+        out[c] = pd.to_numeric(out[c], errors="coerce").round(0)
+
     return out

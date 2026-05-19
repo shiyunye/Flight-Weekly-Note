@@ -1,7 +1,8 @@
 import pandas as pd
 
 def calculate_metrics(
-    data, start_date, end_date, pp_start_date, pp_end_date,
+    data, start_date, end_date, pp_start_date, pp_end_date, cwly_start_date, cwly_end_date,       
+    pwly_start_date, pwly_end_date,  
     format_number, group_col, filters=None, suffix=""
 ):
     data = data.copy()
@@ -11,6 +12,10 @@ def calculate_metrics(
     end_date      = pd.Timestamp(end_date)
     pp_start_date = pd.Timestamp(pp_start_date)
     pp_end_date   = pd.Timestamp(pp_end_date)
+    cwly_start_date =  pd.Timestamp(cwly_start_date)
+    cwly_end_date = pd.Timestamp(cwly_end_date)
+    pwly_start_date= pd.Timestamp(pwly_start_date)
+    pwly_end_date=pd.Timestamp(pwly_end_date)
 
     if filters:
         for col, val in filters.items():
@@ -18,15 +23,19 @@ def calculate_metrics(
 
     current_mask = (data["trans_date"] >= start_date) & (data["trans_date"] <= end_date)
     prev_mask    = (data["trans_date"] >= pp_start_date) & (data["trans_date"] <= pp_end_date)
+    current_ly_mask = (data["trans_date"] >= cwly_start_date) & (data["trans_date"] <= cwly_end_date)
+    prev_ly_mask    = (data["trans_date"] >= pwly_start_date) & (data["trans_date"] <= pwly_end_date)
 
     grouped_current  = data.loc[current_mask].groupby(group_col, dropna=False)
+    grouped_current_ly = data.loc[current_ly_mask].groupby(group_col, dropna=False)
     grouped_previous = data.loc[prev_mask].groupby(group_col, dropna=False)
+    grouped_previous_ly= data.loc[prev_ly_mask].groupby(group_col, dropna=False)
 
     df = pd.DataFrame(index=sorted(data[group_col].dropna().unique()))
     df["Net Tickets"]      = grouped_current["net_tkts_cy"].sum()
-    df["Net Tickets_cwly"] = grouped_current["net_tkts_ly"].sum()
+    df["Net Tickets_cwly"] = grouped_current_ly["net_tkts_cy"].sum()
     df["Net Tickets_PW"]   = grouped_previous["net_tkts_cy"].sum()
-    df["Net Tickets_PWly"] = grouped_previous["net_tkts_ly"].sum()
+    df["Net Tickets_PWly"] = grouped_previous_ly["net_tkts_cy"].sum()
 
     for c in ["Net Tickets", "Net Tickets_cwly", "Net Tickets_PW", "Net Tickets_PWly"]:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
@@ -50,17 +59,24 @@ def calculate_metrics(
     return df.add_suffix(suffix)
 
 
-def calculate_business_metrics(df_priceline, start_date, end_date, pp_start_date, pp_end_date, format_number):
+def calculate_business_metrics(df_priceline, start_date, end_date,    pp_start_date,
+    pp_end_date, 
+    cwly_start_date, 
+    cwly_end_date,       
+    pwly_start_date, 
+    pwly_end_date,       
+    format_number):
     df_standalone = calculate_metrics(
-        df_priceline, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_priceline, start_date, end_date, pp_start_date, pp_end_date,
+        cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date, format_number,
         group_col="company", filters={"offer_type": "Flights Only"}, suffix="_standalone",
     )
     df_package = calculate_metrics(
-        df_priceline, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_priceline, start_date, end_date, pp_start_date, pp_end_date,  cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date,format_number,
         group_col="company", filters={"offer_type": "Packages"}, suffix="_package",
     )
     df_total = calculate_metrics(
-        df_priceline, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_priceline, start_date, end_date, pp_start_date, pp_end_date,  cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date,format_number,
         group_col="company", filters=None, suffix="_total",
     )
 
@@ -71,17 +87,18 @@ def calculate_business_metrics(df_priceline, start_date, end_date, pp_start_date
     return df_business.reindex(["B2C", "B2B", "Total"]).fillna("")
 
 
-def calculate_carrier_metrics(df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number):
+def calculate_carrier_metrics(df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date,cwly_start_date, cwly_end_date,       
+    pwly_start_date, pwly_end_date, format_number):
     df_retail = calculate_metrics(
-        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date, format_number,
         "carrier", filters={"offer_method_code": "Retail (Disclosed)"}, suffix="_Retail",
     )
     df_opaque = calculate_metrics(
-        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date,  cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date,format_number,
         "carrier", filters={"offer_method_code": "Opaque (Non-disclosed)"}, suffix="_Opaque",
     )
     df_total = calculate_metrics(
-        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date,format_number,
         "carrier", suffix="_Total",
     )
 
@@ -93,17 +110,18 @@ def calculate_carrier_metrics(df_pricelince_b2c_standalone, start_date, end_date
     ]).fillna("")
 
 
-def calculate_channel_metrics(df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number):
+def calculate_channel_metrics(df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date,cwly_start_date, cwly_end_date,       
+    pwly_start_date, pwly_end_date,  format_number):
     df_app = calculate_metrics(
-        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date, format_number,
         "search_channel_group", filters={"application": "App"}, suffix="_App",
     )
     df_desk_mweb = calculate_metrics(
-        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date,format_number,
         "search_channel_group", filters={"application": "Desk/MWEB"}, suffix="_Desk/MWEB",
     )
     df_total = calculate_metrics(
-        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, format_number,
+        df_pricelince_b2c_standalone, start_date, end_date, pp_start_date, pp_end_date, cwly_start_date, cwly_end_date,pwly_start_date, pwly_end_date, format_number,
         "search_channel_group", suffix="_Total",
     )
 
