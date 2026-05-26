@@ -91,8 +91,7 @@ def calculate_carrier_metrics(df_pricelince_b2c_standalone,end_date, pp_end_date
 
     df_carrier = pd.concat([df_retail, df_opaque, df_total], axis=1)
     df_carrier = df_carrier.reindex([
-        'American Airlines (AA)', 'Delta Air Lines (DL)', 'United Airlines (UA)','Southwest Airlines (WN)',
-        'Spirit Airlines (NK)', 'Frontier Airlines (F9)', 'Alaska Airlines (AS)',
+        'American Airlines (AA)', 'Delta Air Lines (DL)', 'United Airlines (UA)','Southwest Airlines (WN)', 'Frontier Airlines (F9)', 'Alaska Airlines (AS)',
         'JetBlue Airways (B6)','Other', 'Total'
     ]).fillna('')
     return df_carrier

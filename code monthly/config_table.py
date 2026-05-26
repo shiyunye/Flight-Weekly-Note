@@ -673,7 +673,7 @@ def create_others_table(word_document,df_others):
     bcom_paragraph.add_run().add_picture(
         '../Screenshots/weeklynote/B.com.jpg',
         width=Inches(0.5),
-        height=Inches(0.08)
+        height=Inches(0.28)
     )
     center_text_in_cell(bcom_cell)
 
@@ -805,8 +805,8 @@ def create_roi_table(word_document, df):
 
     icons_and_labels_col2 = [ 
     ('../Screenshots/weeklynote/Direct.jpg', 'Direct', 2, 2, 0.4, 0.4), 
-    ('../Screenshots/weeklynote/SEM Core.jpg', 'SEM Core', 3, 3, 0.4, 0.4), 
-    ('../Screenshots/weeklynote/SEM Brand.jpg', 'SEM Brand', 4, 4, 0.4, 0.4), 
+    # ('../Screenshots/weeklynote/SEM Core.jpg', 'SEM Core', 3, 3, 0.4, 0.4), 
+    # ('../Screenshots/weeklynote/SEM Brand.jpg', 'SEM Brand', 4, 4, 0.4, 0.4), 
     ('../Screenshots/weeklynote/cheapflights.jpg', '', 5, 5, 1.0, 0.12), 
     ('../Screenshots/weeklynote/google.jpg', '', 6, 6, 1.0, 0.34), 
     ('../Screenshots/weeklynote/kayak.jpg', '', 7, 7, 1.0, 0.19), 

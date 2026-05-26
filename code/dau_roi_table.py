@@ -98,6 +98,7 @@ def calculate_dau_conversion(
         for c in pct_cols:
             df_dau_converison[c] = df_dau_converison[c].apply(format_percentage)
     df_dau_converison.index.name = "channel" 
+    
     return df_dau_converison
 
 

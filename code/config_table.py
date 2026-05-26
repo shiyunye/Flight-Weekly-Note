@@ -313,7 +313,7 @@ def populate_table_data(table, df):
                         "Delta Air Lines (DL)": (1.4, 0.21),
                         "United Airlines (UA)": (1.4, 0.25),
                         "Southwest Airlines (WN)": (1.4, 0.21),
-                        "Spirit Airlines (NK)": (1.0, 0.27),
+                        # "Spirit Airlines (NK)": (1.0, 0.27),
                         "Frontier Airlines (F9)": (1.1, 0.24),
                         "Alaska Airlines (AS)": (0.8, 0.25),
                         "JetBlue Airways (B6)": (0.7, 0.25),
@@ -552,7 +552,7 @@ def create_summary_table(word_document,df_summary):
 def create_others_table(word_document,df_others):
     
     # Define table dimensions
-    rows, cols = (df_others.shape[0]+7, df_others.shape[1]+3)
+    rows, cols = (df_others.shape[0]+6, df_others.shape[1]+3)
     table = word_document.add_table(rows=rows, cols=cols, style='Table Grid')
     set_table_style(table, border_color="000000", border_width=8, fill_color="FFFFFF")
 
@@ -594,10 +594,10 @@ def create_others_table(word_document,df_others):
 
     # Add icons and labels for index columns
     icons_and_labels_col1 = [
-        ('../Screenshots/weeklynote/Market Share.jpg', 'Footprint', 2, 7),
-        ('../Screenshots/weeklynote/Parity.jpg', 'Parity', 8,10),
-        ('../Screenshots/weeklynote/Share of Business.jpg', 'Share of Business', 11, 14),
-         ('../Screenshots/weeklynote/Product.jpg', 'Product', 15, 19),
+        ('../Screenshots/weeklynote/Market Share.jpg', 'Footprint', 2, 6),
+        ('../Screenshots/weeklynote/Parity.jpg', 'Parity', 7,7),
+        ('../Screenshots/weeklynote/Share of Business.jpg', 'Share of Business', 8, 11),
+         ('../Screenshots/weeklynote/Product.jpg', 'Product', 12, 16),
     ]
     for icon_path, label, start_row, end_row in icons_and_labels_col1:
         table.cell(start_row, 0).merge(table.cell(end_row, 0))
@@ -613,19 +613,19 @@ def create_others_table(word_document,df_others):
   
     icons_and_labels_col2 = [
         ('../Screenshots/weeklynote/arc.jpg', 'arc', 2, 5, 0.6, 0.25),
-        ('../Screenshots/weeklynote/midt.jpg', 'MIDT', 6, 6, .4, .4),
-        ('../Screenshots/weeklynote/sem.jpg', 'SEM Impressions', 7, 7, 0.4, 0.4),
-        ('../Screenshots/weeklynote/expedia.jpg', 'Direct vs Expedia', 8, 8, 1, .2),
-        ('../Screenshots/weeklynote/Kayak.jpg', 'Kayak Placement', 9, 9, 1.2, 0.23),
-        ('../Screenshots/weeklynote/Skyscanner.jpg', 'Skyscanner Placement', 10, 10, 1.2, 0.21),
-        ('../Screenshots/weeklynote/usoutbound.jpg', 'US Outbound', 11, 11, 0.4, 0.4),
-        ('../Screenshots/weeklynote/Merchant.jpg', 'Merchant', 12, 13, 0.4, 0.4),
-        ('../Screenshots/weeklynote/Deals.jpg', 'Deals', 14, 14, 0.4, 0.4),
-        ('../Screenshots/weeklynote/Conversion.jpg', 'Conversion', 15, 15, 0.4, 0.4),
-        ('../Screenshots/weeklynote/Bookability.jpg', 'Bookability', 16, 16, 0.4, 0.4),
-        ('../Screenshots/weeklynote/Bookability.jpg', 'Upsell', 17, 17, 0.4, 0.4),
-        ('../Screenshots/weeklynote/booking_rate.jpg', 'Booking rate', 18, 18, 0.4, 0.4),
-         ('../Screenshots/weeklynote/ticket_order.jpg', 'Tickets/order', 19, 19, 0.4, 0.4)
+        # ('../Screenshots/weeklynote/midt.jpg', 'MIDT', 6, 6, .4, .4),
+        ('../Screenshots/weeklynote/sem.jpg', 'SEM Impressions', 6, 6, 0.4, 0.4),
+        ('../Screenshots/weeklynote/expedia.jpg', 'Direct vs Expedia', 7, 7, 1, .2),
+        # ('../Screenshots/weeklynote/Kayak.jpg', 'Kayak Placement', 9, 9, 1.2, 0.23),
+        # ('../Screenshots/weeklynote/Skyscanner.jpg', 'Skyscanner Placement', 8, 8, 1.2, 0.21),
+        ('../Screenshots/weeklynote/usoutbound.jpg', 'US Outbound', 8, 8, 0.4, 0.4),
+        ('../Screenshots/weeklynote/Merchant.jpg', 'Merchant', 9, 10, 0.4, 0.4),
+        ('../Screenshots/weeklynote/Deals.jpg', 'Deals', 11, 11, 0.4, 0.4),
+        ('../Screenshots/weeklynote/Conversion.jpg', 'Conversion', 12, 12, 0.4, 0.4),
+        ('../Screenshots/weeklynote/Bookability.jpg', 'Bookability', 13, 13, 0.4, 0.4),
+        ('../Screenshots/weeklynote/Bookability.jpg', 'Upsell', 14, 14, 0.4, 0.4),
+        ('../Screenshots/weeklynote/booking_rate.jpg', 'Booking rate', 15, 15, 0.4, 0.4),
+         ('../Screenshots/weeklynote/ticket_order.jpg', 'Tickets/order', 16, 16, 0.4, 0.4)
      
     ]
     for icon_path, label, start_row, end_row, width, height in icons_and_labels_col2:
@@ -673,7 +673,7 @@ def create_others_table(word_document,df_others):
     bcom_paragraph.add_run().add_picture(
         '../Screenshots/weeklynote/B.com.jpg',
         width=Inches(0.5),
-        height=Inches(0.08)
+        height=Inches(0.28)
     )
     center_text_in_cell(bcom_cell)
 
@@ -689,14 +689,14 @@ def create_others_table(word_document,df_others):
     center_text_in_cell(bhi_cell)
 
    # Add "Retail" text and set its font
-    retail_cell = table.cell(12, 2)
+    retail_cell = table.cell(9, 2)
     retail_paragraph = retail_cell.paragraphs[0]
     retail_paragraph.text = "Retail"
     set_font(retail_paragraph, font_name="Montserrat", font_size=Pt(10), bold=False)
     center_text_in_cell(retail_cell)
 
     # Add "Total" text and set its font
-    total_cell = table.cell(13, 2)
+    total_cell = table.cell(10, 2)
     total_paragraph = total_cell.paragraphs[0]
     total_paragraph.text = "Total"
     set_font(total_paragraph, font_name="Montserrat", font_size=Pt(10), bold=False)
@@ -707,7 +707,7 @@ def create_others_table(word_document,df_others):
     # table.cell(17, 2).merge(table.cell(17, 1)).merge(table.cell(17, 0))
 
     # Populate table rows with data
-    for i, row_data in enumerate(df_others.itertuples(index=False), start=7):
+    for i, row_data in enumerate(df_others.itertuples(index=False), start=6):
         for j, value in enumerate(row_data, start=3):
             cell = table.cell(i, j)
             cell.text = str(value)

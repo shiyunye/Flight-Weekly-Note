@@ -42,30 +42,30 @@ A.ACCOUNT_NAME
 FROM   
     (
     SELECT * FROM(
-                SELECT DISTINCT DOMAIN FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights`
+                SELECT DISTINCT DOMAIN FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights_temp`
                 WHERE DEVICE != 'All Devices' 
                 AND ACCOUNT_NAME IN (SELECT DISTINCT ACCOUNT_NAME FROM `pcln-pl-data-prod.marketing_base.pinnacle_mktg_account_sync_view` WHERE ACCOUNT_NAME 
                                     LIKE 'G/PCLN%'AND CAST(SPEND_FLAG AS STRING)='true' AND CAST(SYNC_FLAG AS STRING)='true' AND CAST(REPORT_FLAG AS STRING)='true')
                 AND ACCOUNT_NAME != 'G/PCLN/EN/US/Cruise' AND ACCOUNT_NAME LIKE 'G/PCLN%'
                 ) A
             JOIN 
-                (SELECT DISTINCT ACCOUNT_NAME FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights`
+                (SELECT DISTINCT ACCOUNT_NAME FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights_temp`
                 WHERE DEVICE != 'All Devices'
                 AND ACCOUNT_NAME IN (SELECT DISTINCT ACCOUNT_NAME FROM `pcln-pl-data-prod.marketing_base.pinnacle_mktg_account_sync_view` WHERE ACCOUNT_NAME 
                                     LIKE 'G/PCLN%'AND CAST(SPEND_FLAG AS STRING)='true' AND CAST(SYNC_FLAG AS STRING)='true' AND CAST(REPORT_FLAG AS STRING)='true')
                 AND ACCOUNT_NAME != 'G/PCLN/EN/US/Cruise' AND ACCOUNT_NAME LIKE 'G/PCLN%' 
                 ) B ON 1=1
             JOIN
-                (SELECT DISTINCT date CALDATE FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights`
+                (SELECT DISTINCT date CALDATE FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights_temp`
                 WHERE PARSE_DATE('%Y%m%d', CAST(date AS STRING)) >= CURRENT_DATE()-400 AND PARSE_DATE('%Y%m%d', CAST(date AS STRING)) <= CURRENT_DATE() - 1) C ON 1=1
             JOIN
                 (SELECT DISTINCT DEVICE 
-                FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights`
+                FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights_temp`
                 WHERE DEVICE != 'All Devices'
                 ) D ON 1=1            
     ) A
 LEFT JOIN 
-    (SELECT * FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights` WHERE DEVICE != 'All Devices') B
+    (SELECT * FROM `pcln-pl-mktganalytics-prod.SEM_YS.Auction_insights_temp` WHERE DEVICE != 'All Devices') B
 ON A.DOMAIN = B.DOMAIN 
 AND A.ACCOUNT_NAME = B.ACCOUNT_NAME
 AND A.CALDATE = B.date
