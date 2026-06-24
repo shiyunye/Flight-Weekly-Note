@@ -116,7 +116,7 @@ def create_finance_number(
     rows.append({
         "Measure": "GDS Incentive",
         "CW": inc_cw, "PW": inc_pw,
-        "Reporting Week": pct(inc_cw, inc_pw), "Previous Week": pct(inc_pw, inc_pw),
+        "Reporting Week": pct(inc_cw, inc_cwly), "Previous Week": pct(inc_pw, inc_pwly),
         "CY": inc_cy, "LY": inc_ly,
         "YTD": pct(inc_cy, inc_ly),
     })
