@@ -847,7 +847,6 @@ def create_roi_table(word_document, df):
         for cell in table.columns[col_idx].cells:
             cell.width = Inches(0.8)
 
-    format_color_values(table)  
-    center_text_in_cell(cell) 
+    format_color_values(table)
 
     return table

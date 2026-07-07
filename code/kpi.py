@@ -1,33 +1,14 @@
 import pandas as pd
-from utils import format_number, format_percentage
+from utils import calculate_metrics as _calculate_metrics
 
 
 def calculate_metrics(data, end_date, pp_end_date, group_col, filters=None, suffix=""):
-    if filters:
-        for col, val in filters.items():
-            data = data[data[col] == val]
-
-    grouped_current = data[data['wk_ending'] == end_date].groupby(group_col)
-    grouped_previous = data[data['wk_ending'] == pp_end_date].groupby(group_col)
-
-    df = pd.DataFrame()
-    df['Net Tickets'] = grouped_current['net_tkts_cy'].sum().astype(int)
-    df['Net Tickets_cwly'] = grouped_current['net_tkts_ly'].sum().astype(int)
-    df['Net Tickets_PW'] = grouped_previous['net_tkts_cy'].sum().astype(int)
-    df['Net Tickets_PWly'] = grouped_previous['net_tkts_ly'].sum().astype(int)
-
-    df.loc['Total', 'Net Tickets':'Net Tickets_PWly'] = [
-        df['Net Tickets'].sum(), df['Net Tickets_cwly'].sum(),
-        df['Net Tickets_PW'].sum(), df['Net Tickets_PWly'].sum()
-    ]
-
-    df['YoY'] = ((df['Net Tickets'] / df['Net Tickets_cwly'] - 1) * 100).apply(format_percentage)
-    df['YoY PW'] = ((df['Net Tickets_PW'] / df['Net Tickets_PWly'] - 1) * 100).apply(format_percentage)
-
-    df = df[['Net Tickets', 'YoY', 'YoY PW']]
-    df['Net Tickets'] = df['Net Tickets'].apply(format_number)
-
-    return df.add_suffix(suffix)
+    return _calculate_metrics(
+        data, end_date, pp_end_date, group_col,
+        value_cy='net_tkts_cy', value_ly='net_tkts_ly',
+        display_name='Net Tickets',
+        filters=filters, suffix=suffix,
+    )
 
 
 def calculate_business_metrics(df_priceline, end_date, pp_end_date):
@@ -68,8 +49,8 @@ def calculate_carrier_metrics(df_priceline_b2c_standalone, end_date, pp_end_date
     df_carrier = pd.concat([df_retail, df_opaque, df_total], axis=1)
     df_carrier = df_carrier.reindex([
         'American Airlines (AA)', 'Delta Air Lines (DL)', 'United Airlines (UA)',
-        'Southwest Airlines (WN)', 'Frontier Airlines (F9)', 'Alaska Airlines (AS)',
-        'JetBlue Airways (B6)', 'Other', 'Total'
+        'Southwest Airlines (WN)', 'Spirit Airlines (NK)', 'Frontier Airlines (F9)',
+        'Alaska Airlines (AS)', 'JetBlue Airways (B6)', 'Other', 'Total'
     ]).fillna('')
     return df_carrier
 

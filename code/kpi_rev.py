@@ -1,33 +1,14 @@
 import pandas as pd
-from utils import format_number, format_percentage
+from utils import calculate_metrics as _calculate_metrics
 
 
 def calculate_metrics(data, end_date, pp_end_date, group_col, filters=None, suffix=""):
-    if filters:
-        for col, val in filters.items():
-            data = data[data[col] == val]
-
-    grouped_current = data[data['wk_ending'] == end_date].groupby(group_col)
-    grouped_previous = data[data['wk_ending'] == pp_end_date].groupby(group_col)
-
-    df = pd.DataFrame()
-    df['Net Cont w/ Fee'] = grouped_current['net_contr_fee_cy'].sum().astype(int)
-    df['net_con_fee_cwly'] = grouped_current['net_contr_fee_ly'].sum().astype(int)
-    df['net_con_fee_pw'] = grouped_previous['net_contr_fee_cy'].sum().astype(int)
-    df['net_con_fee_pwly'] = grouped_previous['net_contr_fee_ly'].sum().astype(int)
-
-    df.loc['Total', 'Net Cont w/ Fee':'net_con_fee_pwly'] = [
-        df['Net Cont w/ Fee'].sum(), df['net_con_fee_cwly'].sum(),
-        df['net_con_fee_pw'].sum(), df['net_con_fee_pwly'].sum()
-    ]
-
-    df['YoY'] = ((df['Net Cont w/ Fee'] / df['net_con_fee_cwly'] - 1) * 100).apply(format_percentage)
-    df['YoY PW'] = ((df['net_con_fee_pw'] / df['net_con_fee_pwly'] - 1) * 100).apply(format_percentage)
-
-    df = df[['Net Cont w/ Fee', 'YoY', 'YoY PW']]
-    df['Net Cont w/ Fee'] = df['Net Cont w/ Fee'].apply(format_number)
-
-    return df.add_suffix(suffix)
+    return _calculate_metrics(
+        data, end_date, pp_end_date, group_col,
+        value_cy='net_contr_fee_cy', value_ly='net_contr_fee_ly',
+        display_name='Net Cont w/ Fee',
+        filters=filters, suffix=suffix,
+    )
 
 
 def calculate_business_metrics(df_priceline, end_date, pp_end_date):

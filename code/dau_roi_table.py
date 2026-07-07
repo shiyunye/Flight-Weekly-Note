@@ -148,44 +148,42 @@ def calculate_roi(df_roi, end_date, pp_end_date, cwly_date, pwly_date):
     return df_roi_section
 
 
-def create_roi_table(df_roi_section, df_dau_converison, format_number):
-    # rename ROI channels to match DAU conversion channels
-    df_roi_section2 = df_roi_section.rename(index={
-        "CHEAPFLIGHTS": "Shop PPC Cheapflights",
-        "CJ": "Affiliate",
-        "CLICKTRIPZ": "Shop PPC Others",
-        "SKYSCANNER": "Shop PPC Skyscanner",
-        "Kayak": "Shop PPC Kayak",
-    })
-
-    dau = df_dau_converison.reset_index()                 # has: channel + DAU/conv cols
-    roi = df_roi_section2.reset_index().rename(columns={"index": "channel"})  # has: channel + ROI cols
-
-    merged = dau.merge(roi, on="channel", how="left").set_index("channel")
-
-    df_roi_v = merged[[
-        "DAU", "DAU YoY", "DAU YoY_PW",
-        "conversion", "conversion_YoY", "conversion_YoY_PW",
-        "ROI", "ROI_YoY", "ROI_YoY_PW",
-    ]].copy()
-
-    # IMPORTANT: avoid duplicate col names
-    df_roi_v.columns = [
-        "DAU", "DAU_YoY", "DAU_YoY_PW",
-        "Conversion", "Conversion_YoY", "Conversion_YoY_PW",
-        "ROI", "ROI_YoY", "ROI_YoY_PW",
-    ]
-
-    # format DAU / ROI (keep conversion numeric for now)
-    df_roi_v["DAU"] = df_roi_v["DAU"].apply(format_number)
-    df_roi_v["ROI"] = df_roi_v["ROI"].apply(lambda x: "" if pd.isna(x) else f"{x:.2f}")
-
+def create_roi_table(df_dau_converison, format_number, df_roi_section=None):
     order = [
         "Direct", "SEM Core", "SEM Brand",
         "Shop PPC Cheapflights", "Shop PPC Google", "Shop PPC Kayak",
         "Shop PPC Skyscanner", "Shop PPC Others",
         "Affiliate", "Total",
     ]
+
+    dau = df_dau_converison.reset_index()
+    df_roi_v = dau.set_index("channel")[[
+        "DAU", "DAU YoY", "DAU YoY_PW",
+        "conversion", "conversion_YoY", "conversion_YoY_PW",
+    ]].copy()
+    df_roi_v.columns = [
+        "DAU", "DAU_YoY", "DAU_YoY_PW",
+        "Conversion", "Conversion_YoY", "Conversion_YoY_PW",
+    ]
+
+    if df_roi_section is not None:
+        roi = df_roi_section.rename(index={
+            "CHEAPFLIGHTS": "Shop PPC Cheapflights",
+            "CJ": "Affiliate",
+            "CLICKTRIPZ": "Shop PPC Others",
+            "SKYSCANNER": "Shop PPC Skyscanner",
+            "Kayak": "Shop PPC Kayak",
+        })
+        df_roi_v["ROI"] = roi["ROI"]
+        df_roi_v["ROI_YoY"] = roi["ROI_YoY"]
+        df_roi_v["ROI_YoY_PW"] = roi["ROI_YoY_PW"]
+        df_roi_v["ROI"] = df_roi_v["ROI"].apply(lambda x: "" if pd.isna(x) else f"{x:.2f}")
+    else:
+        df_roi_v["ROI"] = ""
+        df_roi_v["ROI_YoY"] = ""
+        df_roi_v["ROI_YoY_PW"] = ""
+
+    df_roi_v["DAU"] = df_roi_v["DAU"].apply(format_number)
     df_roi_v = df_roi_v.reindex(order)
 
     return df_roi_v
